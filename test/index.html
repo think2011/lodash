@@ -32,22 +32,19 @@
     <div id="exports"></div>
     <div id="module"></div>
     <script>
-      var setProperty = (function() {
-        var _defineProperty = Object.defineProperty;
-        return function(object, key, value) {
-          try {
-            _defineProperty(object, key, {
-              'configurable': true,
-              'enumerable': false,
-              'writable': true,
-              'value': value
-            });
-          } catch(e) {
-            object[key] = value;
-          }
-          return object;
-        };
-      }());
+      function setProperty(object, key, value) {
+        try {
+          Object.defineProperty(object, key, {
+            'configurable': true,
+            'enumerable': false,
+            'writable': true,
+            'value': value
+          });
+        } catch (e) {
+          object[key] = value;
+        }
+        return object;
+      }
 
       function addBizarroMethods() {
         var funcProto = Function.prototype,
@@ -106,8 +103,11 @@
 
           setProperty(Map, 'toString', createToString('Map'));
         }
-        setProperty(Object, '_create', window.create);
+        setProperty(Object, '_create', Object.create);
         setProperty(Object, 'create', noop);
+
+        setProperty(Object, '_getOwnPropertySymbols', Object.getOwnPropertySymbols);
+        setProperty(Object, 'getOwnPropertySymbols', undefined);
 
         setProperty(window, '_Set', window.Set);
         setProperty(window, 'Set', noop);
@@ -132,6 +132,11 @@
           Object.create = Object._create;
         } else {
           delete Object.create;
+        }
+        if (Object._getOwnPropertySymbols) {
+          Object.getOwnPropertySymbols = Object._getOwnPropertySymbols;
+        } else {
+          delete Object.getOwnPropertySymbols;
         }
         if (_Map) {
           Map = _Map;
@@ -163,6 +168,7 @@
         delete funcProto._method;
         delete objectProto._propertyIsEnumerable;
         delete Object._create;
+        delete Object._getOwnPropertySymbols;
       }
 
       // Load lodash to expose it to the bad extensions/shims.

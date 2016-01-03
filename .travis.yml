@@ -6,9 +6,6 @@ env:
   global:
     - BIN="node" ISTANBUL=false OPTION=""
     - NPM_VERSION="^2.0.0" SAUCE_LABS=false SAUCE_USERNAME="lodash"
-    - PATTERN1="s|\s*if\s*\(isHostObject\b[\s\S]+?\}(?=\n)||"
-    - PATTERN2="s|\s*if\s*\(enumerate\b[\s\S]+?\};\s*\}||"
-    - PATTERN3="s|\s*while\s*\([^)]+\)\s*\{\s*iteratee\(index\);\s*\}||"
     - secure: "tg1JFsIFnxzLaTboFPOnm+aJCuMm5+JdhLlESlqg9x3fwro++7KCnwHKLNovhchaPe4otC43ZMB/nfWhDnDm11dKbm/V6HlTkED+dadTsaLxVDg6J+7yK41QhokBPJOxLV78iDaNaAQVYEirAgZ0yn8kFubxmNKV+bpCGQNc9yU="
   matrix:
     -
@@ -40,14 +37,29 @@ before_install:
   - "nvm use $TRAVIS_NODE_VERSION"
   - "npm config set loglevel error"
   - "npm i -g npm@\"$NPM_VERSION\""
-  - "[ $ISTANBUL == false ]   || perl -0pi -e \"$PATTERN1\" ./lodash.js"
-  - "[ $ISTANBUL == false ]   || perl -0pi -e \"$PATTERN2\" ./lodash.js"
-  - "[ $ISTANBUL == false ]   || perl -0pi -e \"$PATTERN3\" ./lodash.js"
+  - |
+      PATTERN[0]="|\s*if\s*\(isHostObject\b[\s\S]+?\}(?=\n)|"
+      PATTERN[1]="|\s*if\s*\(enumerate\b[\s\S]+?\};\s*\}|"
+      PATTERN[2]="|\s*while\s*\([^)]+\)\s*\{\s*iteratee\(index\);\s*\}|"
+      PATTERN[3]="|\s*else\s*\{\s*assocSet\(data\b[\s\S]+?\}|"
+      PATTERN[4]="|\s*if\s*\(ctorString\b[\s\S]+?\}\s*\}|"
+      PATTERN[5]="|\bindex,\s*iterable\)\s*===\s*false\)[^}]+?(break;)|"
+      PATTERN[6]="|\s*if\s*\(!lodashFunc\)\s*\{\s*return;\s*\}|"
+      PATTERN[7]="|\s*define\([\s\S]+?\);|"
+      PATTERN[8]="|\s*root\._\s*=\s*_;|"
+
+      if [ $ISTANBUL == true ]; then
+        set -e
+        for PTRN in ${PATTERN[@]}; do
+          node ./test/remove.js "$PTRN" ./lodash.js
+        done
+      fi
   - "git clone --depth=10 --branch=master git://github.com/lodash/lodash-cli ./node_modules/lodash-cli && mkdir $_/node_modules && cd $_ && ln -s ../../../ ./lodash && cd ../ && npm i && cd ../../"
   - "node ./node_modules/lodash-cli/bin/lodash -o ./dist/lodash.js"
 script:
-  - "[ $ISTANBUL == false ]   || node ./node_modules/istanbul/lib/cli.js cover -x \"**/vendor/**\" --report lcovonly ./test/test.js -- ./dist/lodash.js"
+  - "[ $ISTANBUL == false ]   || istanbul cover -x \"**/vendor/**\" --report lcovonly ./test/test.js -- ./lodash.js"
   - "[ $ISTANBUL == false ]   || [ $TRAVIS_SECURE_ENV_VARS == false ] || (cat ./coverage/lcov.info | coveralls) || true"
+  - "[ $ISTANBUL == false ]   || [ $TRAVIS_SECURE_ENV_VARS == false ] || (cat ./coverage/coverage.json | codecov) || true"
   - "[ $SAUCE_LABS == true ]  || [ $ISTANBUL == true ] || cd ./test"
   - "[ $SAUCE_LABS == true ]  || [ $ISTANBUL == true ] || $BIN $OPTION ./test.js ../lodash.js"
   - "[ $SAUCE_LABS == true ]  || [ $ISTANBUL == true ] || [ $TRAVIS_SECURE_ENV_VARS == false ] || $BIN $OPTION ./test.js ../dist/lodash.min.js"
