@@ -71,6 +71,28 @@
       isEven = function(n) { return n % 2 == 0; },
       square = function(n) { return n * n; };
 
+  /** Constant functions. */
+  var alwaysA = function() { return 'a'; },
+      alwaysB = function() { return 'b'; },
+      alwaysC = function() { return 'c'; };
+
+  var alwaysTrue = function() { return true; },
+      alwaysFalse = function() { return false; };
+
+  var alwaysNaN = function() { return NaN; },
+      alwaysNull = function() { return null; },
+      alwaysUndefined = function() { return undefined; };
+
+  var alwaysZero = function() { return 0; },
+      alwaysOne = function() { return 1; },
+      alwaysTwo = function() { return 2; },
+      alwaysThree = function() { return 3; },
+      alwaysFour = function() { return 4; };
+
+  var alwaysEmptyArray = function() { return []; },
+      alwaysEmptyObject = function() { return {}; },
+      alwaysEmptyString = function() { return ''; };
+
   /** The file path of the lodash file to test. */
   var filePath = (function() {
     var min = 2,
@@ -748,7 +770,7 @@
 
       if (func) {
         var values = [[0], ['0'], ['1'], [3, 4], [MAX_SAFE_INTEGER - 1]],
-            expected = lodashStable.map(values, lodashStable.constant(true));
+            expected = lodashStable.map(values, alwaysTrue);
 
         var actual = lodashStable.map(values, function(args) {
           return func.apply(undefined, args);
@@ -766,7 +788,7 @@
 
       if (func) {
         var values = [['1abc'], ['07'], ['0001'], [-1], [3, 3], [1.1], [MAX_SAFE_INTEGER]],
-            expected = lodashStable.map(values, lodashStable.constant(false));
+            expected = lodashStable.map(values, alwaysFalse);
 
         var actual = lodashStable.map(values, function(args) {
           return func.apply(undefined, args);
@@ -854,7 +876,7 @@
 
   (function() {
     var values = empties.concat(true, 1, 'a'),
-        expected = lodashStable.map(values, lodashStable.constant(true));
+        expected = lodashStable.map(values, alwaysTrue);
 
     QUnit.test('should create a new instance when called without the `new` operator', function(assert) {
       assert.expect(1);
@@ -988,7 +1010,7 @@
       assert.expect(2);
 
       var after = _.after(1, function(assert) { return ++this.count; }),
-          object = { 'count': 0, 'after': after };
+          object = { 'after': after, 'count': 0 };
 
       object.after();
       assert.strictEqual(object.after(), 2);
@@ -1108,13 +1130,13 @@
   lodashStable.each(['assign', 'assignIn'], function(methodName) {
     var func = _[methodName];
 
-    QUnit.test('`_.' + methodName + '` should assign properties of a source object to the destination object', function(assert) {
+    QUnit.test('`_.' + methodName + '` should assign source properties to `object`', function(assert) {
       assert.expect(1);
 
       assert.deepEqual(func({ 'a': 1 }, { 'b': 2 }), { 'a': 1, 'b': 2 });
     });
 
-    QUnit.test('`_.' + methodName + '` should accept multiple source objects', function(assert) {
+    QUnit.test('`_.' + methodName + '` should accept multiple sources', function(assert) {
       assert.expect(2);
 
       var expected = { 'a': 1, 'b': 2, 'c': 3 };
@@ -1157,15 +1179,15 @@
       };
 
       defineProperty(object, 'a', lodashStable.assign({}, descriptor, {
-        'get': lodashStable.constant(1)
+        'get': alwaysOne
       }));
 
       defineProperty(object, 'b', lodashStable.assign({}, descriptor, {
-        'get': lodashStable.constant(undefined)
+        'get': alwaysUndefined
       }));
 
       defineProperty(object, 'c', lodashStable.assign({}, descriptor, {
-        'get': lodashStable.constant(NaN)
+        'get': alwaysNaN
       }));
 
       defineProperty(object, 'constructor', lodashStable.assign({}, descriptor, {
@@ -1213,7 +1235,7 @@
       assert.expect(1);
 
       var expected = { 'a': undefined };
-      assert.deepEqual(func({}, expected, lodashStable.constant(undefined)), expected);
+      assert.deepEqual(func({}, expected, alwaysUndefined), expected);
     });
   });
 
@@ -1251,7 +1273,7 @@
         result[value] = 1;
       }, []);
 
-      var expected = lodashStable.map(values, lodashStable.constant(1)),
+      var expected = lodashStable.map(values, alwaysOne),
           actual = _.at(array, values);
 
       assert.deepEqual(actual, expected);
@@ -1398,7 +1420,7 @@
     QUnit.test('should return the caught error', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(errors, lodashStable.constant(true));
+      var expected = lodashStable.map(errors, alwaysTrue);
 
       var actual = lodashStable.map(errors, function(error) {
         return _.attempt(function() { throw error; }) === error;
@@ -1418,7 +1440,7 @@
       assert.expect(1);
 
       if (realm.errors) {
-        var expected = lodashStable.map(realm.errors, lodashStable.constant(true));
+        var expected = lodashStable.map(realm.errors, alwaysTrue);
 
         var actual = lodashStable.map(realm.errors, function(error) {
           return _.attempt(function() { throw error; }) === error;
@@ -1484,7 +1506,7 @@
       assert.expect(2);
 
       var before = _.before(2, function(assert) { return ++this.count; }),
-          object = { 'count': 0, 'before': before };
+          object = { 'before': before, 'count': 0 };
 
       object.before();
       assert.strictEqual(object.before(), 1);
@@ -1706,7 +1728,7 @@
       if (typeof createCtor == 'function') {
         var bound = _.bind(createCtor()),
             count = 8,
-            expected = lodashStable.times(count, lodashStable.constant(true));
+            expected = lodashStable.times(count, alwaysTrue);
 
         var actual = lodashStable.times(count, function(index) {
           try {
@@ -1903,7 +1925,7 @@
         return func(string) === converted;
       });
 
-      assert.deepEqual(actual, lodashStable.map(strings, lodashStable.constant(true)));
+      assert.deepEqual(actual, lodashStable.map(strings, alwaysTrue));
     });
 
     QUnit.test('`_.' + methodName + '` should handle double-converting strings', function(assert) {
@@ -1913,7 +1935,7 @@
         return func(func(string)) === converted;
       });
 
-      assert.deepEqual(actual, lodashStable.map(strings, lodashStable.constant(true)));
+      assert.deepEqual(actual, lodashStable.map(strings, alwaysTrue));
     });
 
     QUnit.test('`_.' + methodName + '` should deburr letters', function(assert) {
@@ -1931,7 +1953,7 @@
         return func(burred) === letter;
       });
 
-      assert.deepEqual(actual, lodashStable.map(burredLetters, lodashStable.constant(true)));
+      assert.deepEqual(actual, lodashStable.map(burredLetters, alwaysTrue));
     });
 
     QUnit.test('`_.' + methodName + '` should trim latin-1 mathematical operators', function(assert) {
@@ -2159,7 +2181,7 @@
       assert.expect(1);
 
       var values = falsey.concat(-1, -Infinity),
-          expected = lodashStable.map(values, lodashStable.constant([]));
+          expected = lodashStable.map(values, alwaysEmptyArray);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.chunk(array, value) : _.chunk(array);
@@ -2263,7 +2285,7 @@
 
   (function() {
     function Foo() { this.a = 1; }
-    Foo.prototype = { 'b': 1 };
+    Foo.prototype.b = 1;
     Foo.c = function() {};
 
     if (Map) {
@@ -2451,6 +2473,12 @@
         assert.strictEqual(actual.lastIndex, 3);
       });
 
+      QUnit.test('`_.' + methodName + '` should create clone with the same `[[Prototype]]` as `value`', function(assert) {
+        assert.expect(1);
+
+        assert.ok(func(new Foo) instanceof Foo);
+      });
+
       QUnit.test('`_.' + methodName + '` should clone properties that shadow those on `Object.prototype`', function(assert) {
         assert.expect(2);
 
@@ -2565,7 +2593,7 @@
           }
         }, []);
 
-        var expected = lodashStable.map(objects, lodashStable.constant(true));
+        var expected = lodashStable.map(objects, alwaysTrue);
 
         var actual = lodashStable.map(objects, function(object) {
           var Ctor = object.constructor,
@@ -2779,28 +2807,58 @@
   QUnit.module('lodash.cond');
 
   (function() {
-    QUnit.test('should throw a TypeError if `pairs` is not composed of functions', function(assert) {
-      assert.expect(2);
+    QUnit.test('should create a conditional function', function(assert) {
+      assert.expect(3);
 
-      var predicate = lodashStable.constant(true);
+      var cond = _.cond([
+        [lodashStable.matches({ 'a': 1 }),     alwaysA],
+        [lodashStable.matchesProperty('b', 1), alwaysB],
+        [lodashStable.property('c'),           alwaysC]
+      ]);
 
-      lodashStable.each([true, false], function(value) {
-        assert.raises(function() { _.cond([[predicate, value]]); }, TypeError);
-      });
+      assert.strictEqual(cond({ 'a':  1, 'b': 2, 'c': 3 }), 'a');
+      assert.strictEqual(cond({ 'a':  0, 'b': 1, 'c': 2 }), 'b');
+      assert.strictEqual(cond({ 'a': -1, 'b': 0, 'c': 1 }), 'c');
     });
 
     QUnit.test('should work with predicate shorthands', function(assert) {
       assert.expect(3);
 
       var cond = _.cond([
-        [{ 'a': 1 }, lodashStable.constant('A')],
-        [['b', 1],   lodashStable.constant('B')],
-        ['c',        lodashStable.constant('C')]
+        [{ 'a': 1 }, alwaysA],
+        [['b', 1],   alwaysB],
+        ['c',        alwaysC]
       ]);
 
-      assert.strictEqual(cond({ 'a':  1, 'b': 2, 'c': 3 }), 'A');
-      assert.strictEqual(cond({ 'a':  0, 'b': 1, 'c': 2 }), 'B');
-      assert.strictEqual(cond({ 'a': -1, 'b': 0, 'c': 1 }), 'C');
+      assert.strictEqual(cond({ 'a':  1, 'b': 2, 'c': 3 }), 'a');
+      assert.strictEqual(cond({ 'a':  0, 'b': 1, 'c': 2 }), 'b');
+      assert.strictEqual(cond({ 'a': -1, 'b': 0, 'c': 1 }), 'c');
+    });
+
+    QUnit.test('should return `undefined` when no condition is met', function(assert) {
+      assert.expect(1);
+
+      var cond = _.cond([[alwaysFalse, alwaysA]]);
+      assert.strictEqual(cond({ 'a': 1 }), undefined);
+    });
+
+    QUnit.test('should throw a TypeError if `pairs` is not composed of functions', function(assert) {
+      assert.expect(2);
+
+      lodashStable.each([true, false], function(value) {
+        assert.raises(function() { _.cond([[alwaysTrue, value]])(); }, TypeError);
+      });
+    });
+
+    QUnit.test('should use `this` binding of function for `pairs`', function(assert) {
+      assert.expect(1);
+
+      var cond = _.cond([
+        [function(a) { return this[a]; }, function(a, b) { return this[b]; }]
+      ]);
+
+      var object = { 'cond': cond, 'a': 1, 'b': 2 };
+      assert.strictEqual(object.cond('a', 'b'), 2);
     });
   }());
 
@@ -2914,7 +2972,7 @@
       assert.expect(1);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var conforms = _.conforms({
         'a': function(value) { return value > 1; }
@@ -2933,7 +2991,7 @@
       assert.expect(1);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(true)),
+          expected = lodashStable.map(values, alwaysTrue),
           conforms = _.conforms({});
 
       var actual = lodashStable.map(values, function(value, index) {
@@ -2949,7 +3007,7 @@
       assert.expect(1);
 
       var object = { 'a': 1 },
-          expected = lodashStable.map(empties, lodashStable.constant(true));
+          expected = lodashStable.map(empties, alwaysTrue);
 
       var actual = lodashStable.map(empties, function(value) {
         var conforms = _.conforms(value);
@@ -3177,7 +3235,7 @@
     QUnit.test('should accept a falsey `prototype` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant({}));
+      var expected = lodashStable.map(falsey, alwaysEmptyObject);
 
       var actual = lodashStable.map(falsey, function(prototype, index) {
         return index ? _.create(prototype) : _.create();
@@ -3190,7 +3248,7 @@
       assert.expect(1);
 
       var primitives = [true, null, 1, 'a', undefined],
-          expected = lodashStable.map(primitives, lodashStable.constant(true));
+          expected = lodashStable.map(primitives, alwaysTrue);
 
       var actual = lodashStable.map(primitives, function(value, index) {
         return lodashStable.isPlainObject(index ? _.create(value) : _.create());
@@ -3203,7 +3261,7 @@
       assert.expect(1);
 
       var array = [{ 'a': 1 }, { 'a': 1 }, { 'a': 1 }],
-          expected = lodashStable.map(array, lodashStable.constant(true)),
+          expected = lodashStable.map(array, alwaysTrue),
           objects = lodashStable.map(array, _.create);
 
       var actual = lodashStable.map(objects, function(object) {
@@ -3249,7 +3307,7 @@
       assert.expect(2);
 
       var values = ['0', 0.6, 'xyz'],
-          expected = lodashStable.map(values, lodashStable.constant([]));
+          expected = lodashStable.map(values, alwaysEmptyArray);
 
       var actual = lodashStable.map(values, function(arity) {
         return _.curry(fn, arity)();
@@ -3381,7 +3439,7 @@
       assert.expect(2);
 
       var values = ['0', 0.6, 'xyz'],
-          expected = lodashStable.map(values, lodashStable.constant([]));
+          expected = lodashStable.map(values, alwaysEmptyArray);
 
       var actual = lodashStable.map(values, function(arity) {
         return _.curryRight(fn, arity)();
@@ -3783,13 +3841,13 @@
   QUnit.module('lodash.defaults');
 
   (function() {
-    QUnit.test('should assign properties of a source object if missing on the destination object', function(assert) {
+    QUnit.test('should assign source properties if missing on `object`', function(assert) {
       assert.expect(1);
 
       assert.deepEqual(_.defaults({ 'a': 1 }, { 'a': 2, 'b': 2 }), { 'a': 1, 'b': 2 });
     });
 
-    QUnit.test('should accept multiple source objects', function(assert) {
+    QUnit.test('should accept multiple sources', function(assert) {
       assert.expect(2);
 
       var expected = { 'a': 1, 'b': 2, 'c': 3 };
@@ -3844,7 +3902,7 @@
   QUnit.module('lodash.defaultsDeep');
 
   (function() {
-    QUnit.test('should deep assign properties of a source object if missing on the destination object', function(assert) {
+    QUnit.test('should deep assign source properties if missing on `object`', function(assert) {
       assert.expect(1);
 
       var object = { 'a': { 'b': 2 }, 'd': 4 },
@@ -3854,7 +3912,7 @@
       assert.deepEqual(_.defaultsDeep(object, source), expected);
     });
 
-    QUnit.test('should accept multiple source objects', function(assert) {
+    QUnit.test('should accept multiple sources', function(assert) {
       assert.expect(2);
 
       var source1 = { 'a': { 'b': 3 } },
@@ -4096,7 +4154,7 @@
     QUnit.test('`_.' + methodName + '` should work with large arrays of `NaN`', function(assert) {
       assert.expect(1);
 
-      var largeArray = lodashStable.times(LARGE_ARRAY_SIZE, lodashStable.constant(NaN));
+      var largeArray = lodashStable.times(LARGE_ARRAY_SIZE, alwaysNaN);
       assert.deepEqual(func([1, NaN, 3], largeArray), [1, 3]);
     });
 
@@ -4526,7 +4584,7 @@
     QUnit.test('should treat falsey `position` values, except `undefined`, as `0`', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(true));
+      var expected = lodashStable.map(falsey, alwaysTrue);
 
       var actual = lodashStable.map(falsey, function(position) {
         return _.endsWith(string, position === undefined ? 'c' : '', position);
@@ -4646,7 +4704,7 @@
       assert.expect(1);
 
       var values = [, null, undefined, ''],
-          expected = lodashStable.map(values, lodashStable.constant(''));
+          expected = lodashStable.map(values, alwaysEmptyString);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.escapeRegExp(value) : _.escapeRegExp();
@@ -4670,7 +4728,7 @@
     QUnit.test('should return `true` for empty collections', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(empties, lodashStable.constant(true));
+      var expected = lodashStable.map(empties, alwaysTrue);
 
       var actual = lodashStable.map(empties, function(value) {
         try {
@@ -4704,7 +4762,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value, index) {
         var array = [0];
@@ -4713,7 +4771,7 @@
 
       assert.deepEqual(actual, expected);
 
-      expected = lodashStable.map(values, lodashStable.constant(true));
+      expected = lodashStable.map(values, alwaysTrue);
       actual = lodashStable.map(values, function(value, index) {
         var array = [1];
         return index ? _.every(array, value) : _.every(array);
@@ -4961,7 +5019,7 @@
           object = { '1': 'foo', '8': 'bar', '50': 'baz' };
 
       lodashStable.times(1000, function(assert) {
-        _.filter([], lodashStable.constant(true));
+        _.filter([], alwaysTrue);
       });
 
       _.filter(object, function() {
@@ -5852,7 +5910,7 @@
           };
 
           var values = [-1, '1', 1.1, Object(1), MAX_SAFE_INTEGER + 1],
-              expected = lodashStable.map(values, lodashStable.constant(true));
+              expected = lodashStable.map(values, alwaysTrue);
 
           var actual = lodashStable.map(values, function(length) {
             return isIteratedAsObject({ 'length': length });
@@ -5941,7 +5999,7 @@
     QUnit.test('`_.' + methodName + '` should coerce primitives to objects', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(true));
+      var expected = lodashStable.map(falsey, alwaysTrue);
 
       var actual = lodashStable.map(falsey, function(object, index) {
         var result = index ? func(object) : func();
@@ -5971,10 +6029,10 @@
       }
     });
 
-    QUnit.test('`_.' + methodName + '` should not error when `object` is nullish and source objects are provided', function(assert) {
+    QUnit.test('`_.' + methodName + '` should not error when `object` is nullish and sources are provided', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.times(2, lodashStable.constant(true));
+      var expected = lodashStable.times(2, alwaysTrue);
 
       var actual = lodashStable.map([null, undefined], function(value) {
         try {
@@ -6208,7 +6266,7 @@
     QUnit.test('should accept a falsey `array` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant({}));
+      var expected = lodashStable.map(falsey, alwaysEmptyObject);
 
       var actual = lodashStable.map(falsey, function(array, index) {
         try {
@@ -6516,7 +6574,7 @@
       delete string[0];
 
       var values = [Array(3), args, string],
-          expected = lodashStable.map(values, lodashStable.constant(true));
+          expected = lodashStable.map(values, alwaysTrue);
 
       var actual = lodashStable.map(values, function(value) {
         return func(value, 0);
@@ -6530,7 +6588,7 @@
       assert.expect(2);
 
       var values = [null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       lodashStable.each(['constructor', ['constructor']], function(path) {
         var actual = lodashStable.map(values, function(value) {
@@ -6545,7 +6603,7 @@
       assert.expect(2);
 
       var values = [null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       lodashStable.each(['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']], function(path) {
         var actual = lodashStable.map(values, function(value) {
@@ -6719,7 +6777,7 @@
       QUnit.test('should work with ' + key + ' and treat falsey `fromIndex` values as `0`', function(assert) {
         assert.expect(1);
 
-        var expected = lodashStable.map(falsey, lodashStable.constant(true));
+        var expected = lodashStable.map(falsey, alwaysTrue);
 
         var actual = lodashStable.map(falsey, function(fromIndex) {
           return _.includes(collection, values[0], fromIndex);
@@ -6796,7 +6854,7 @@
     QUnit.test('should return `false` for empty collections', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(empties, lodashStable.constant(false));
+      var expected = lodashStable.map(empties, alwaysFalse);
 
       var actual = lodashStable.map(empties, function(value) {
         try {
@@ -6876,7 +6934,7 @@
       assert.expect(1);
 
       var values = [-6, -8, -Infinity],
-          expected = lodashStable.map(values, lodashStable.constant(0));
+          expected = lodashStable.map(values, alwaysZero);
 
       var actual = lodashStable.map(values, function(fromIndex) {
         return _.indexOf(array, 1, fromIndex);
@@ -6888,7 +6946,7 @@
     QUnit.test('should treat falsey `fromIndex` values as `0`', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(0));
+      var expected = lodashStable.map(falsey, alwaysZero);
 
       var actual = lodashStable.map(falsey, function(fromIndex) {
         return _.indexOf(array, 1, fromIndex);
@@ -6914,7 +6972,7 @@
     QUnit.test('should accept a falsey `array` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant([]));
+      var expected = lodashStable.map(falsey, alwaysEmptyArray);
 
       var actual = lodashStable.map(falsey, function(array, index) {
         try {
@@ -7035,7 +7093,7 @@
       assert.expect(1);
 
       var actual = [_.inRange(0, '0', 1), _.inRange(0, '1'), _.inRange(0, 0, '1'), _.inRange(0, NaN, 1), _.inRange(-1, -1, NaN)],
-          expected = lodashStable.map(actual, lodashStable.constant(true));
+          expected = lodashStable.map(actual, alwaysTrue);
 
       assert.deepEqual(actual, expected);
     });
@@ -7083,7 +7141,7 @@
     QUnit.test('`_.' + methodName + '` should work with large arrays of `NaN`', function(assert) {
       assert.expect(1);
 
-      var largeArray = lodashStable.times(LARGE_ARRAY_SIZE, lodashStable.constant(NaN));
+      var largeArray = lodashStable.times(LARGE_ARRAY_SIZE, alwaysNaN);
       assert.deepEqual(func([1, NaN, 3], largeArray), [NaN]);
     });
 
@@ -7269,7 +7327,7 @@
       assert.expect(1);
 
       var values = [null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       var actual = lodashStable.map(values, function(value) {
         try {
@@ -7305,7 +7363,7 @@
       assert.expect(1);
 
       if (!isNpm) {
-        var object = { 'a': lodashStable.constant(1) };
+        var object = { 'a': alwaysOne };
         assert.strictEqual(_(object).invoke('a'), 1);
       }
       else {
@@ -7317,7 +7375,7 @@
       assert.expect(1);
 
       if (!isNpm) {
-        var object = { 'a': lodashStable.constant(1) };
+        var object = { 'a': alwaysOne };
         assert.ok(_(object).chain().invoke('a') instanceof _);
       }
       else {
@@ -7391,7 +7449,7 @@
     QUnit.test('should not error on elements with missing properties', function(assert) {
       assert.expect(1);
 
-      var objects = lodashStable.map([null, undefined, lodashStable.constant(1)], function(value) {
+      var objects = lodashStable.map([null, undefined, alwaysOne], function(value) {
         return { 'a': value };
       });
 
@@ -7479,7 +7537,7 @@
     QUnit.test('should return `false` for non `arguments` objects', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isArguments(value) : _.isArguments();
@@ -7528,7 +7586,7 @@
     QUnit.test('should return `false` for non-arrays', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isArray(value) : _.isArray();
@@ -7572,7 +7630,7 @@
       assert.expect(1);
 
       var values = [args, [1, 2, 3], { '0': 1, 'length': 1 }, 'a'],
-          expected = lodashStable.map(values, lodashStable.constant(true)),
+          expected = lodashStable.map(values, alwaysTrue),
           actual = lodashStable.map(values, _.isArrayLike);
 
       assert.deepEqual(actual, expected);
@@ -7608,7 +7666,7 @@
 
       if (realm.object) {
         var values = [realm.arguments, realm.array, realm.string],
-            expected = lodashStable.map(values, lodashStable.constant(true)),
+            expected = lodashStable.map(values, alwaysTrue),
             actual = lodashStable.map(values, _.isArrayLike);
 
         assert.deepEqual(actual, expected);
@@ -7689,7 +7747,7 @@
     QUnit.test('should return `false` for non-dates', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isDate(value) : _.isDate();
@@ -7750,7 +7808,7 @@
     QUnit.test('should return `false` for non DOM elements', function(assert) {
       assert.expect(13);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isElement(value) : _.isElement();
@@ -7794,7 +7852,7 @@
     QUnit.test('should return `true` for empty values', function(assert) {
       assert.expect(8);
 
-      var expected = lodashStable.map(empties, lodashStable.constant(true)),
+      var expected = lodashStable.map(empties, alwaysTrue),
           actual = lodashStable.map(empties, _.isEmpty);
 
       assert.deepEqual(actual, expected);
@@ -8226,7 +8284,7 @@
       var primitive,
           object = { 'toString': function() { return primitive; } },
           values = [true, null, 1, 'a', undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value) {
         primitive = value;
@@ -8623,11 +8681,11 @@
     QUnit.test('should return a boolean value even if `customizer` does not', function(assert) {
       assert.expect(2);
 
-      var actual = _.isEqualWith('a', 'b', lodashStable.constant('c'));
+      var actual = _.isEqualWith('a', 'b', alwaysC);
       assert.strictEqual(actual, true);
 
       var values = _.without(falsey, undefined),
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       actual = [];
       lodashStable.each(values, function(value) {
@@ -8707,7 +8765,7 @@
     QUnit.test('should return `true` for error objects', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(errors, lodashStable.constant(true));
+      var expected = lodashStable.map(errors, alwaysTrue);
 
       var actual = lodashStable.map(errors, function(error) {
         return _.isError(error) === true;
@@ -8719,7 +8777,7 @@
     QUnit.test('should return `false` for non error objects', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isError(value) : _.isError();
@@ -8744,7 +8802,7 @@
       assert.expect(1);
 
       if (realm.errors) {
-        var expected = lodashStable.map(realm.errors, lodashStable.constant(true));
+        var expected = lodashStable.map(realm.errors, alwaysTrue);
 
         var actual = lodashStable.map(realm.errors, function(error) {
           return _.isError(error) === true;
@@ -8769,7 +8827,7 @@
       assert.expect(1);
 
       var values = [0, 1, 3.14, -1],
-          expected = lodashStable.map(values, lodashStable.constant(true)),
+          expected = lodashStable.map(values, alwaysTrue),
           actual = lodashStable.map(values, _.isFinite);
 
       assert.deepEqual(actual, expected);
@@ -8779,7 +8837,7 @@
       assert.expect(1);
 
       var values = [NaN, Infinity, -Infinity, Object(1)],
-          expected = lodashStable.map(values, lodashStable.constant(false)),
+          expected = lodashStable.map(values, alwaysFalse),
           actual = lodashStable.map(values, _.isFinite);
 
       assert.deepEqual(actual, expected);
@@ -8789,7 +8847,7 @@
       assert.expect(10);
 
       var values = [undefined, [], true, '', ' ', '2px'],
-          expected = lodashStable.map(values, lodashStable.constant(false)),
+          expected = lodashStable.map(values, alwaysFalse),
           actual = lodashStable.map(values, _.isFinite);
 
       assert.deepEqual(actual, expected);
@@ -8809,7 +8867,7 @@
       assert.expect(1);
 
       var values = ['2', '0', '08'],
-          expected = lodashStable.map(values, lodashStable.constant(false)),
+          expected = lodashStable.map(values, alwaysFalse),
           actual = lodashStable.map(values, _.isFinite);
 
       assert.deepEqual(actual, expected);
@@ -8853,7 +8911,7 @@
     QUnit.test('should return `false` for non-functions', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isFunction(value) : _.isFunction();
@@ -8920,7 +8978,7 @@
       assert.expect(2);
 
       var values = [-1, 0, 1],
-          expected = lodashStable.map(values, lodashStable.constant(true));
+          expected = lodashStable.map(values, alwaysTrue);
 
       var actual = lodashStable.map(values, function(value) {
         return func(value);
@@ -8934,7 +8992,7 @@
       assert.expect(1);
 
       var values = [NaN, Infinity, -Infinity, Object(1), 3.14],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value) {
         return func(value);
@@ -8977,7 +9035,7 @@
       assert.expect(1);
 
       var values = [0, 3, MAX_SAFE_INTEGER],
-          expected = lodashStable.map(values, lodashStable.constant(true)),
+          expected = lodashStable.map(values, alwaysTrue),
           actual = lodashStable.map(values, _.isLength);
 
       assert.deepEqual(actual, expected);
@@ -8987,7 +9045,7 @@
       assert.expect(1);
 
       var values = [-1, '1', 1.1, MAX_SAFE_INTEGER + 1],
-          expected = lodashStable.map(values, lodashStable.constant(false)),
+          expected = lodashStable.map(values, alwaysFalse),
           actual = lodashStable.map(values, _.isLength);
 
       assert.deepEqual(actual, expected);
@@ -9029,7 +9087,7 @@
 
       var objects = [{ 'a': 1 }, { 'a': 1, 'b': 2 }],
           source = new Foo,
-          expected = lodashStable.map(objects, lodashStable.constant(true));
+          expected = lodashStable.map(objects, alwaysTrue);
 
       var actual = lodashStable.map(objects, function(object) {
         return _.isMatch(object, source);
@@ -9261,7 +9319,7 @@
       assert.expect(1);
 
       var values = [null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false)),
+          expected = lodashStable.map(values, alwaysFalse),
           source = { 'a': 1 };
 
       var actual = lodashStable.map(values, function(value) {
@@ -9277,7 +9335,7 @@
       assert.expect(1);
 
       var values = [null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(true)),
+          expected = lodashStable.map(values, alwaysTrue),
           source = {};
 
       var actual = lodashStable.map(values, function(value) {
@@ -9293,7 +9351,7 @@
       assert.expect(1);
 
       var object = { 'a': 1 },
-          expected = lodashStable.map(empties, lodashStable.constant(true));
+          expected = lodashStable.map(empties, alwaysTrue);
 
       var actual = lodashStable.map(empties, function(value) {
         return _.isMatch(object, value);
@@ -9385,11 +9443,11 @@
       assert.expect(2);
 
       var object = { 'a': 1 },
-          actual = _.isMatchWith(object, { 'a': 1 }, lodashStable.constant('a'));
+          actual = _.isMatchWith(object, { 'a': 1 }, alwaysA);
 
       assert.strictEqual(actual, true);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       actual = [];
       lodashStable.each(falsey, function(value) {
@@ -9542,7 +9600,7 @@
     QUnit.test('should return `false` for non-native methods', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isNative(value) : _.isNative();
@@ -9793,7 +9851,7 @@
       assert.expect(1);
 
       var values = falsey.concat(true, 1, 'a', symbol),
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.isObject(value) : _.isObject();
@@ -9867,7 +9925,7 @@
       assert.expect(1);
 
       var values = falsey.concat(true, _, slice, 1, 'a', symbol),
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.isObjectLike(value) : _.isObjectLike();
@@ -9967,7 +10025,7 @@
     QUnit.test('should return `false` for non-objects', function(assert) {
       assert.expect(4);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isPlainObject(value) : _.isPlainObject();
@@ -10009,7 +10067,7 @@
     QUnit.test('should return `false` for non-regexes', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isRegExp(value) : _.isRegExp();
@@ -10116,7 +10174,7 @@
     QUnit.test('should return `false` for non-symbols', function(assert) {
       assert.expect(12);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isSymbol(value) : _.isSymbol();
@@ -10174,7 +10232,7 @@
     QUnit.test('should return `false` for non typed arrays', function(assert) {
       assert.expect(13);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(false));
+      var expected = lodashStable.map(falsey, alwaysFalse);
 
       var actual = lodashStable.map(falsey, function(value, index) {
         return index ? _.isTypedArray(value) : _.isTypedArray();
@@ -10480,7 +10538,7 @@
       var fn = function() { return this instanceof Number; },
           array = [fn, fn, fn],
           iteratees = lodashStable.map(array, _.iteratee),
-          expected = lodashStable.map(array, lodashStable.constant(false));
+          expected = lodashStable.map(array, alwaysFalse);
 
       var actual = lodashStable.map(iteratees, function(iteratee) {
         return iteratee();
@@ -11493,7 +11551,7 @@
       assert.expect(1);
 
       var values = [-6, -8, -Infinity],
-          expected = lodashStable.map(values, lodashStable.constant(0));
+          expected = lodashStable.map(values, alwaysZero);
 
       var actual = lodashStable.map(values, function(fromIndex) {
         return _.lastIndexOf(array, 1, fromIndex);
@@ -11665,7 +11723,7 @@
     QUnit.test('should accept a falsey `collection` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant([]));
+      var expected = lodashStable.map(falsey, alwaysEmptyArray);
 
       var actual = lodashStable.map(falsey, function(collection, index) {
         try {
@@ -11838,7 +11896,7 @@
     QUnit.test('should accept a falsey `object` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant({}));
+      var expected = lodashStable.map(falsey, alwaysEmptyObject);
 
       var actual = lodashStable.map(falsey, function(object, index) {
         try {
@@ -11866,7 +11924,7 @@
   QUnit.module('lodash.matches');
 
   (function() {
-    QUnit.test('should create a function that performs a deep comparison between a given object and `source`', function(assert) {
+    QUnit.test('should create a function that performs a deep comparison between `source` and a given object', function(assert) {
       assert.expect(6);
 
       var object = { 'a': 1, 'b': 2, 'c': 3 },
@@ -11911,7 +11969,7 @@
       var objects = [{ 'a': 1 }, { 'a': 1, 'b': 2 }],
           source = new Foo,
           actual = lodashStable.map(objects, _.matches(source)),
-          expected = lodashStable.map(objects, lodashStable.constant(true));
+          expected = lodashStable.map(objects, alwaysTrue);
 
       assert.deepEqual(actual, expected);
     });
@@ -12127,7 +12185,7 @@
       assert.expect(1);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false)),
+          expected = lodashStable.map(values, alwaysFalse),
           matches = _.matches({ 'a': 1 });
 
       var actual = lodashStable.map(values, function(value, index) {
@@ -12143,7 +12201,7 @@
       assert.expect(1);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(true)),
+          expected = lodashStable.map(values, alwaysTrue),
           matches = _.matches({});
 
       var actual = lodashStable.map(values, function(value, index) {
@@ -12159,7 +12217,7 @@
       assert.expect(1);
 
       var object = { 'a': 1 },
-          expected = lodashStable.map(empties, lodashStable.constant(true));
+          expected = lodashStable.map(empties, alwaysTrue);
 
       var actual = lodashStable.map(empties, function(value) {
         var matches = _.matches(value);
@@ -12309,7 +12367,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       lodashStable.each(['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']], function(path) {
         var matches = _.matchesProperty(path, 1);
@@ -12345,7 +12403,7 @@
       Foo.prototype.b = 2;
 
       var objects = [{ 'a': { 'a': 1 } }, { 'a': { 'a': 1, 'b': 2 } }],
-          expected = lodashStable.map(objects, lodashStable.constant(true));
+          expected = lodashStable.map(objects, alwaysTrue);
 
       lodashStable.each(['a', ['a']], function(path) {
         assert.deepEqual(lodashStable.map(objects, _.matchesProperty(path, new Foo)), expected);
@@ -12539,7 +12597,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       lodashStable.each(['constructor', ['constructor']], function(path) {
         var matches = _.matchesProperty(path, 1);
@@ -12606,7 +12664,7 @@
       assert.expect(1);
 
       var values = falsey.concat([[]]),
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       var actual = lodashStable.map(values, function(value, index) {
         try {
@@ -12669,7 +12727,7 @@
       var fn = function(a, b, c) { return a + this.b + this.c; },
           memoized = _.memoize(fn, fn);
 
-      var object = { 'b': 2, 'c': 3, 'memoized': memoized };
+      var object = { 'memoized': memoized, 'b': 2, 'c': 3 };
       assert.strictEqual(object.memoized(1), 6);
 
       object.b = 3;
@@ -12686,7 +12744,7 @@
     QUnit.test('should not error if `resolver` is falsey', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(true));
+      var expected = lodashStable.map(falsey, alwaysTrue);
 
       var actual = lodashStable.map(falsey, function(resolver, index) {
         try {
@@ -12891,7 +12949,7 @@
   (function() {
     var args = arguments;
 
-    QUnit.test('should merge `source` into the destination object', function(assert) {
+    QUnit.test('should merge `source` into `object`', function(assert) {
       assert.expect(1);
 
       var names = {
@@ -13091,7 +13149,7 @@
       function Foo() {}
 
       var values = [new Foo, new Boolean, new Date, Foo, new Number, new String, new RegExp],
-          expected = lodashStable.map(values, lodashStable.constant(true));
+          expected = lodashStable.map(values, alwaysTrue);
 
       var actual = lodashStable.map(values, function(value) {
         var object = _.merge({}, { 'value': value });
@@ -13105,7 +13163,7 @@
       assert.expect(1);
 
       var values = [[], new (Uint8Array || Object), {}],
-          expected = lodashStable.map(values, lodashStable.constant(true));
+          expected = lodashStable.map(values, alwaysTrue);
 
       var actual = lodashStable.map(values, function(value) {
         var object = _.merge({}, { 'value': value });
@@ -13181,7 +13239,7 @@
       }
     });
 
-    QUnit.test('should convert values to arrays when merging with arrays of `source`', function(assert) {
+    QUnit.test('should convert values to arrays when merging arrays of `source`', function(assert) {
       assert.expect(2);
 
       var object = { 'a': { '1': 'y', 'b': 'z', 'length': 2 } },
@@ -13193,7 +13251,7 @@
       assert.deepEqual(actual, { 'a': [] });
     });
 
-    QUnit.test('should not convert strings to arrays when merging with arrays of `source`', function(assert) {
+    QUnit.test('should not convert strings to arrays when merging arrays of `source`', function(assert) {
       assert.expect(1);
 
       var object = { 'a': 'abcdef' },
@@ -13208,7 +13266,7 @@
       var object1 = { 'el': document && document.createElement('div') },
           object2 = { 'el': document && document.createElement('div') },
           pairs = [[{}, object1], [object1, object2]],
-          expected = lodashStable.map(pairs, lodashStable.constant(true));
+          expected = lodashStable.map(pairs, alwaysTrue);
 
       var actual = lodashStable.map(pairs, function(pair) {
         try {
@@ -13254,7 +13312,7 @@
     QUnit.test('should create a function that calls a method of a given object', function(assert) {
       assert.expect(4);
 
-      var object = { 'a': lodashStable.constant(1) };
+      var object = { 'a': alwaysOne };
 
       lodashStable.each(['a', ['a']], function(path) {
         var method = _.method(path);
@@ -13266,7 +13324,7 @@
     QUnit.test('should work with deep property values', function(assert) {
       assert.expect(2);
 
-      var object = { 'a': { 'b': { 'c': lodashStable.constant(3) } } };
+      var object = { 'a': { 'b': { 'c': alwaysThree } } };
 
       lodashStable.each(['a.b.c', ['a', 'b', 'c']], function(path) {
         var method = _.method(path);
@@ -13292,7 +13350,7 @@
       fn.toString = lodashStable.constant('fn');
 
       var expected = [1, 1, 2, 2, 3, 3, 4, 4],
-          objects = [{ 'null': lodashStable.constant(1) }, { 'undefined': lodashStable.constant(2) }, { 'fn': lodashStable.constant(3) }, { '[object Object]': lodashStable.constant(4) }],
+          objects = [{ 'null': alwaysOne }, { 'undefined': alwaysTwo }, { 'fn': alwaysThree }, { '[object Object]': alwaysFour }],
           values = [null, undefined, fn, {}];
 
       var actual = lodashStable.transform(objects, function(result, object, index) {
@@ -13310,7 +13368,7 @@
       assert.expect(2);
 
       function Foo() {}
-      Foo.prototype.a = lodashStable.constant(1);
+      Foo.prototype.a = alwaysOne;
 
       lodashStable.each(['a', ['a']], function(path) {
         var method = _.method(path);
@@ -13321,7 +13379,7 @@
     QUnit.test('should use a key over a path', function(assert) {
       assert.expect(2);
 
-      var object = { 'a.b.c': lodashStable.constant(3), 'a': { 'b': { 'c': lodashStable.constant(4) } } };
+      var object = { 'a.b.c': alwaysThree, 'a': { 'b': { 'c': alwaysFour } } };
 
       lodashStable.each(['a.b.c', ['a.b.c']], function(path) {
         var method = _.method(path);
@@ -13333,7 +13391,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor', ['constructor']], function(path) {
         var method = _.method(path);
@@ -13350,7 +13408,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']], function(path) {
         var method = _.method(path);
@@ -13409,7 +13467,7 @@
     QUnit.test('should create a function that calls a method of a given key', function(assert) {
       assert.expect(4);
 
-      var object = { 'a': lodashStable.constant(1) };
+      var object = { 'a': alwaysOne };
 
       lodashStable.each(['a', ['a']], function(path) {
         var methodOf = _.methodOf(object);
@@ -13421,7 +13479,7 @@
     QUnit.test('should work with deep property values', function(assert) {
       assert.expect(2);
 
-      var object = { 'a': { 'b': { 'c': lodashStable.constant(3) } } };
+      var object = { 'a': { 'b': { 'c': alwaysThree } } };
 
       lodashStable.each(['a.b.c', ['a', 'b', 'c']], function(path) {
         var methodOf = _.methodOf(object);
@@ -13447,7 +13505,7 @@
       fn.toString = lodashStable.constant('fn');
 
       var expected = [1, 1, 2, 2, 3, 3, 4, 4],
-          objects = [{ 'null': lodashStable.constant(1) }, { 'undefined': lodashStable.constant(2) }, { 'fn': lodashStable.constant(3) }, { '[object Object]': lodashStable.constant(4) }],
+          objects = [{ 'null': alwaysOne }, { 'undefined': alwaysTwo }, { 'fn': alwaysThree }, { '[object Object]': alwaysFour }],
           values = [null, undefined, fn, {}];
 
       var actual = lodashStable.transform(objects, function(result, object, index) {
@@ -13465,7 +13523,7 @@
       assert.expect(2);
 
       function Foo() {}
-      Foo.prototype.a = lodashStable.constant(1);
+      Foo.prototype.a = alwaysOne;
 
       lodashStable.each(['a', ['a']], function(path) {
         var methodOf = _.methodOf(new Foo);
@@ -13476,7 +13534,7 @@
     QUnit.test('should use a key over a path', function(assert) {
       assert.expect(2);
 
-      var object = { 'a.b.c': lodashStable.constant(3), 'a': { 'b': { 'c': lodashStable.constant(4) } } };
+      var object = { 'a.b.c': alwaysThree, 'a': { 'b': { 'c': alwaysFour } } };
 
       lodashStable.each(['a.b.c', ['a.b.c']], function(path) {
         var methodOf = _.methodOf(object);
@@ -13488,7 +13546,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor', ['constructor']], function(path) {
         var actual = lodashStable.map(values, function(value, index) {
@@ -13504,7 +13562,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']], function(path) {
         var actual = lodashStable.map(values, function(value, index) {
@@ -13570,7 +13628,7 @@
       assert.expect(1);
 
       var values = falsey.concat([[]]),
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       var actual = lodashStable.map(values, function(value, index) {
         try {
@@ -13724,7 +13782,7 @@
 
       if (!isNpm) {
         _.mixin(source);
-        _.a = lodashStable.constant('b');
+        _.a = alwaysB;
 
         assert.strictEqual(_.a(array), 'b');
         assert.strictEqual(_(array).a().value(), 'a');
@@ -14024,7 +14082,7 @@
       assert.deepEqual(argsList, [['a'], ['b']]);
     });
 
-    QUnit.test('should use `this` binding of function for transforms', function(assert) {
+    QUnit.test('should use `this` binding of function for `transforms`', function(assert) {
       assert.expect(1);
 
       var over = _.overArgs(function(x) {
@@ -14062,7 +14120,7 @@
       assert.expect(1);
 
       var values = empties.concat(true, new Date, _, 1, /x/, 'a'),
-          expected = lodashStable.map(values, lodashStable.constant());
+          expected = lodashStable.map(values, alwaysUndefined);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.noop(value) : _.noop();
@@ -14155,7 +14213,7 @@
       assert.expect(2);
 
       var values = falsey,
-          expected = lodashStable.map(values, lodashStable.constant('a'));
+          expected = lodashStable.map(values, alwaysA);
 
       var actual = lodashStable.map(values, function(n) {
         var func = n ? _.nthArg(n) : _.nthArg();
@@ -14165,7 +14223,7 @@
       assert.deepEqual(actual, expected);
 
       values = ['1', 1.6];
-      expected = lodashStable.map(values, lodashStable.constant('b'));
+      expected = lodashStable.map(values, alwaysB);
 
       actual = lodashStable.map(values, function(n) {
         var func = _.nthArg(n);
@@ -14326,7 +14384,7 @@
         throw new Error;
       });
 
-      assert.raises(function() { once(); }, Error);
+      assert.raises(once);
 
       try {
         once();
@@ -14384,7 +14442,7 @@
       assert.deepEqual(over('a', 'b', 'c'), [['a', 'b', 'c']]);
     });
 
-    QUnit.test('should not set a `this` binding', function(assert) {
+    QUnit.test('should use `this` binding of function for `iteratees`', function(assert) {
       assert.expect(1);
 
       var over = _.over(function() { return this.b; }, function() { return this.a; }),
@@ -14402,7 +14460,7 @@
     QUnit.test('should create a function that returns `true` if all predicates return truthy', function(assert) {
       assert.expect(1);
 
-      var over = _.overEvery(lodashStable.constant(true), lodashStable.constant(1), lodashStable.constant('a'));
+      var over = _.overEvery(alwaysTrue, alwaysOne, alwaysA);
       assert.strictEqual(over(), true);
     });
 
@@ -14410,9 +14468,9 @@
       assert.expect(2);
 
       var count = 0,
-          alwaysFalse = function() { count++; return false; },
-          alwaysTrue = function() { count++; return true; },
-          over = _.overEvery(alwaysTrue, alwaysFalse, alwaysTrue);
+          countFalse = function() { count++; return false; },
+          countTrue = function() { count++; return true; },
+          over = _.overEvery(countTrue, countFalse, countTrue);
 
       assert.strictEqual(over(), false);
       assert.strictEqual(count, 2);
@@ -14453,7 +14511,7 @@
     QUnit.test('should flatten `predicates`', function(assert) {
       assert.expect(1);
 
-      var over = _.overEvery(lodashStable.constant(true), [lodashStable.constant(false)]);
+      var over = _.overEvery(alwaysTrue, [alwaysFalse]);
       assert.strictEqual(over(), false);
     });
 
@@ -14470,7 +14528,7 @@
       assert.deepEqual(args, ['a', 'b', 'c']);
     });
 
-    QUnit.test('should not set a `this` binding', function(assert) {
+    QUnit.test('should use `this` binding of function for `predicates`', function(assert) {
       assert.expect(2);
 
       var over = _.overEvery(function() { return this.b; }, function() { return this.a; }),
@@ -14491,10 +14549,10 @@
     QUnit.test('should create a function that returns `true` if any predicates return truthy', function(assert) {
       assert.expect(2);
 
-      var over = _.overSome(lodashStable.constant(false), lodashStable.constant(1), lodashStable.constant(''));
+      var over = _.overSome(alwaysFalse, alwaysOne, alwaysEmptyString);
       assert.strictEqual(over(), true);
 
-      over = _.overSome(lodashStable.constant(null), lodashStable.constant('a'), lodashStable.constant(0));
+      over = _.overSome(alwaysNull, alwaysA, alwaysZero);
       assert.strictEqual(over(), true);
     });
 
@@ -14502,9 +14560,9 @@
       assert.expect(2);
 
       var count = 0,
-          falsey = function() { count++; return false; },
-          truthy = function() { count++; return true; },
-          over = _.overSome(falsey, truthy, falsey);
+          countFalse = function() { count++; return false; },
+          countTrue = function() { count++; return true; },
+          over = _.overSome(countFalse, countTrue, countFalse);
 
       assert.strictEqual(over(), true);
       assert.strictEqual(count, 2);
@@ -14513,10 +14571,10 @@
     QUnit.test('should return `false` if all predicates return falsey', function(assert) {
       assert.expect(2);
 
-      var over = _.overSome(lodashStable.constant(false), lodashStable.constant(false), lodashStable.constant(false));
+      var over = _.overSome(alwaysFalse, alwaysFalse, alwaysFalse);
       assert.strictEqual(over(), false);
 
-      over = _.overSome(lodashStable.constant(null), lodashStable.constant(0), lodashStable.constant(''));
+      over = _.overSome(alwaysNull, alwaysZero, alwaysEmptyString);
       assert.strictEqual(over(), false);
     });
 
@@ -14555,7 +14613,7 @@
     QUnit.test('should flatten `predicates`', function(assert) {
       assert.expect(1);
 
-      var over = _.overSome(lodashStable.constant(false), [lodashStable.constant(true)]);
+      var over = _.overSome(alwaysFalse, [alwaysTrue]);
       assert.strictEqual(over(), true);
     });
 
@@ -14572,7 +14630,7 @@
       assert.deepEqual(args, ['a', 'b', 'c']);
     });
 
-    QUnit.test('should not set a `this` binding', function(assert) {
+    QUnit.test('should use `this` binding of function for `predicates`', function(assert) {
       assert.expect(2);
 
       var over = _.overSome(function() { return this.b; }, function() { return this.a; }),
@@ -14794,7 +14852,7 @@
     QUnit.test('should coerce `radix` to a number', function(assert) {
       assert.expect(2);
 
-      var object = { 'valueOf': lodashStable.constant(0) };
+      var object = { 'valueOf': alwaysZero };
       assert.strictEqual(_.parseInt('08', object), 8);
       assert.strictEqual(_.parseInt('0x20', object), 32);
     });
@@ -15171,8 +15229,8 @@
       assert.expect(3);
 
       assert.deepEqual(_.partition([], identity), [[], []]);
-      assert.deepEqual(_.partition(array, lodashStable.constant(true)), [array, []]);
-      assert.deepEqual(_.partition(array, lodashStable.constant(false)), [[], array]);
+      assert.deepEqual(_.partition(array, alwaysTrue), [array, []]);
+      assert.deepEqual(_.partition(array, alwaysFalse), [[], array]);
     });
 
     QUnit.test('should use `_.identity` when `predicate` is nullish', function(assert) {
@@ -15411,7 +15469,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor', ['constructor']], function(path) {
         var prop = _.property(path);
@@ -15428,7 +15486,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']], function(path) {
         var prop = _.property(path);
@@ -15541,7 +15599,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor', ['constructor']], function(path) {
         var actual = lodashStable.map(values, function(value, index) {
@@ -15557,7 +15615,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined));
+          expected = lodashStable.map(values, alwaysUndefined);
 
       lodashStable.each(['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']], function(path) {
         var actual = lodashStable.map(values, function(value, index) {
@@ -15750,12 +15808,12 @@
         result[value] = 1;
       }, []);
 
-      var expected = lodashStable.map(values, lodashStable.constant(1)),
+      var expected = lodashStable.map(values, alwaysOne),
           actual = _.pullAt(array, values);
 
       assert.deepEqual(actual, expected);
 
-      expected = lodashStable.map(values, lodashStable.constant(undefined)),
+      expected = lodashStable.map(values, alwaysUndefined),
       actual = _.at(array, values);
 
       assert.deepEqual(actual, expected);
@@ -15901,7 +15959,7 @@
       assert.expect(1);
 
       var array = [1, 2, 3],
-          expected = lodashStable.map(array, lodashStable.constant(true)),
+          expected = lodashStable.map(array, alwaysTrue),
           randoms = lodashStable.map(array, _.random);
 
       var actual = lodashStable.map(randoms, function(result, index) {
@@ -16241,7 +16299,7 @@
       assert.expect(1);
 
       var actual = [],
-          expected = lodashStable.map(empties, lodashStable.constant());
+          expected = lodashStable.map(empties, alwaysUndefined);
 
       lodashStable.each(empties, function(value) {
         try {
@@ -16567,7 +16625,7 @@
       assert.strictEqual(_.repeat('abc'), '');
       assert.strictEqual(_.repeat('abc', '2'), 'abcabc');
       assert.strictEqual(_.repeat('abc', 2.6), 'abcabc');
-      assert.strictEqual(_.repeat('*', { 'valueOf': lodashStable.constant(3) }), '***');
+      assert.strictEqual(_.repeat('*', { 'valueOf': alwaysThree }), '***');
     });
 
     QUnit.test('should coerce `string` to a string', function(assert) {
@@ -16714,7 +16772,7 @@
       assert.expect(2);
 
       var values = [null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(undefined)),
+          expected = lodashStable.map(values, alwaysUndefined),
           paths = ['constructor.prototype.valueOf', ['constructor', 'prototype', 'valueOf']];
 
       lodashStable.each(paths, function(path) {
@@ -17129,7 +17187,7 @@
     QUnit.test('should return `undefined` when sampling empty collections', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(empties, lodashStable.constant(undefined));
+      var expected = lodashStable.map(empties, alwaysUndefined);
 
       var actual = lodashStable.transform(empties, function(result, value) {
         try {
@@ -17175,7 +17233,7 @@
     QUnit.test('should treat falsey `n` values as `0`', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant([]));
+      var expected = lodashStable.map(falsey, alwaysEmptyArray);
 
       var actual = lodashStable.map(falsey, function(n, index) {
         return index ? _.sampleSize([1], n) : _.sampleSize([1]);
@@ -17210,7 +17268,7 @@
     QUnit.test('should return an empty array for empty collections', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(empties, lodashStable.constant([]));
+      var expected = lodashStable.map(empties, alwaysEmptyArray);
 
       var actual = lodashStable.transform(empties, function(result, value) {
         try {
@@ -17252,7 +17310,7 @@
     QUnit.test('should work with a `customizer` that returns `undefined`', function(assert) {
       assert.expect(1);
 
-      var actual = _.setWith({}, 'a[0].b.c', 4, lodashStable.constant(undefined));
+      var actual = _.setWith({}, 'a[0].b.c', 4, alwaysUndefined);
       assert.deepEqual(actual, { 'a': [{ 'b': { 'c': 4 } }] });
     });
   }());
@@ -17525,7 +17583,7 @@
     QUnit.test('should accept a falsey `object` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(0));
+      var expected = lodashStable.map(falsey, alwaysZero);
 
       var actual = lodashStable.map(falsey, function(object, index) {
         try {
@@ -17753,7 +17811,7 @@
     QUnit.test('should return `false` for empty collections', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(empties, lodashStable.constant(false));
+      var expected = lodashStable.map(empties, alwaysFalse);
 
       var actual = lodashStable.map(empties, function(value) {
         try {
@@ -17788,7 +17846,7 @@
       assert.expect(2);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(false));
+          expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value, index) {
         var array = [0, 0];
@@ -17797,7 +17855,7 @@
 
       assert.deepEqual(actual, expected);
 
-      expected = lodashStable.map(values, lodashStable.constant(true));
+      expected = lodashStable.map(values, alwaysTrue);
       actual = lodashStable.map(values, function(value, index) {
         var array = [0, 1];
         return index ? _.some(array, value) : _.some(array);
@@ -18000,9 +18058,10 @@
       var funcs = [func, lodashStable.partialRight(func, 'bogus')];
 
       lodashStable.each(['a', 0, [0]], function(props, index) {
-        var expected = lodashStable.map(funcs, lodashStable.constant(index
-          ? [objects[2], objects[3], objects[0], objects[1]]
-          : [objects[0], objects[2], objects[1], objects[3]]
+        var expected = lodashStable.map(funcs, lodashStable.constant(
+          index
+            ? [objects[2], objects[3], objects[0], objects[1]]
+            : [objects[0], objects[2], objects[1], objects[3]]
         ));
 
         var actual = lodashStable.map(funcs, function(func) {
@@ -18217,8 +18276,7 @@
     QUnit.test('should accept a falsey `array` argument', function(assert) {
       assert.expect(1);
 
-      var alwaysTrue = lodashStable.constant(true),
-          spread = _.spread(alwaysTrue),
+      var spread = _.spread(alwaysTrue),
           expected = lodashStable.map(falsey, alwaysTrue);
 
       var actual = lodashStable.map(falsey, function(array, index) {
@@ -18280,7 +18338,7 @@
     QUnit.test('should treat falsey `position` values as `0`', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant(true));
+      var expected = lodashStable.map(falsey, alwaysTrue);
 
       var actual = lodashStable.map(falsey, function(position) {
         return _.startsWith(string, 'a', position);
@@ -18414,7 +18472,7 @@
     QUnit.test('should return `undefined` when passing empty `array` values', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(empties, lodashStable.constant(undefined)),
+      var expected = lodashStable.map(empties, alwaysUndefined),
           actual = lodashStable.map(empties, _.sum);
 
       assert.deepEqual(actual, expected);
@@ -18488,7 +18546,7 @@
     QUnit.test('should accept a falsey `array` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant([]));
+      var expected = lodashStable.map(falsey, alwaysEmptyArray);
 
       var actual = lodashStable.map(falsey, function(array, index) {
         try {
@@ -19055,6 +19113,13 @@
       assert.deepEqual(actual, expected);
     });
 
+    QUnit.test('should not reference `_.escape` when "escape" delimiters are not used', function(assert) {
+      assert.expect(1);
+
+      var compiled = _.template('<%= typeof __e %>');
+      assert.strictEqual(compiled({}), 'undefined');
+    });
+
     QUnit.test('should evaluate JavaScript in "evaluate" delimiters', function(assert) {
       assert.expect(1);
 
@@ -19071,7 +19136,25 @@
       assert.strictEqual(actual, '<ul><li>A</li><li>B</li></ul>');
     });
 
-    QUnit.test('should interpolate data object properties', function(assert) {
+    QUnit.test('should support "evaluate" delimiters with single line comments (test production builds)', function(assert) {
+      assert.expect(1);
+
+      var compiled = _.template('<% // A code comment. %><% if (value) { %>yap<% } else { %>nope<% } %>'),
+          data = { 'value': true };
+
+      assert.strictEqual(compiled(data), 'yap');
+    });
+
+    QUnit.test('should support referencing variables declared in "evaluate" delimiters from other delimiters', function(assert) {
+      assert.expect(1);
+
+      var compiled = _.template('<% var b = a; %><%= b.value %>'),
+          data = { 'a': { 'value': 1 } };
+
+      assert.strictEqual(compiled(data), '1');
+    });
+
+    QUnit.test('should interpolate data properties in "interpolate" delimiters', function(assert) {
       assert.expect(1);
 
       var strings = ['<%= a %>BC', '<%=a%>BC', '<%=\na\n%>BC'],
@@ -19085,7 +19168,7 @@
       assert.deepEqual(actual, expected);
     });
 
-    QUnit.test('should support escaped values in "interpolation" delimiters', function(assert) {
+    QUnit.test('should support "interpolate" delimiters with escaped values', function(assert) {
       assert.expect(1);
 
       var compiled = _.template('<%= a ? "a=\\"A\\"" : "" %>'),
@@ -19094,7 +19177,7 @@
       assert.strictEqual(compiled(data), 'a="A"');
     });
 
-    QUnit.test('should work with "interpolate" delimiters containing ternary operators', function(assert) {
+    QUnit.test('should support "interpolate" delimiters containing ternary operators', function(assert) {
       assert.expect(1);
 
       var compiled = _.template('<%= value ? value : "b" %>'),
@@ -19103,7 +19186,7 @@
       assert.strictEqual(compiled(data), 'a');
     });
 
-    QUnit.test('should work with "interpolate" delimiters containing global values', function(assert) {
+    QUnit.test('should support "interpolate" delimiters containing global values', function(assert) {
       assert.expect(1);
 
       var compiled = _.template('<%= typeof Math.abs %>');
@@ -19115,7 +19198,7 @@
       assert.strictEqual(actual, 'function');
     });
 
-    QUnit.test('should work with complex "interpolate" delimiters', function(assert) {
+    QUnit.test('should support complex "interpolate" delimiters', function(assert) {
       assert.expect(22);
 
       lodashStable.forOwn({
@@ -19150,7 +19233,7 @@
       });
     });
 
-    QUnit.test('should parse ES6 template delimiters', function(assert) {
+    QUnit.test('should support ES6 template delimiters', function(assert) {
       assert.expect(2);
 
       var data = { 'value': 2 };
@@ -19158,32 +19241,32 @@
       assert.strictEqual(_.template('${"{" + value + "\\}"}')(data), '{2}');
     });
 
-    QUnit.test('should not reference `_.escape` when "escape" delimiters are not used', function(assert) {
+    QUnit.test('should support the "imports" option', function(assert) {
       assert.expect(1);
 
-      var compiled = _.template('<%= typeof __e %>');
-      assert.strictEqual(compiled({}), 'undefined');
+      var compiled = _.template('<%= a %>', { 'imports': { 'a': 1 } });
+      assert.strictEqual(compiled({}), '1');
     });
 
-    QUnit.test('should allow referencing variables declared in "evaluate" delimiters from other delimiters', function(assert) {
+    QUnit.test('should support the "variable" options', function(assert) {
       assert.expect(1);
 
-      var compiled = _.template('<% var b = a; %><%= b.value %>'),
-          data = { 'a': { 'value': 1 } };
+      var compiled = _.template(
+        '<% _.each( data.a, function( value ) { %>' +
+            '<%= value.valueOf() %>' +
+        '<% }) %>', { 'variable': 'data' }
+      );
 
-      assert.strictEqual(compiled(data), '1');
+      var data = { 'a': [1, 2, 3] };
+
+      try {
+        assert.strictEqual(compiled(data), '123');
+      } catch (e) {
+        assert.ok(false, e.message);
+      }
     });
 
-    QUnit.test('should support single line comments in "evaluate" delimiters (test production builds)', function(assert) {
-      assert.expect(1);
-
-      var compiled = _.template('<% // A code comment. %><% if (value) { %>yap<% } else { %>nope<% } %>'),
-          data = { 'value': true };
-
-      assert.strictEqual(compiled(data), 'yap');
-    });
-
-    QUnit.test('should work with custom delimiters', function(assert) {
+    QUnit.test('should support custom delimiters', function(assert) {
       assert.expect(2);
 
       lodashStable.times(2, function(index) {
@@ -19204,7 +19287,7 @@
       });
     });
 
-    QUnit.test('should work with custom delimiters containing special characters', function(assert) {
+    QUnit.test('should support custom delimiters containing special characters', function(assert) {
       assert.expect(2);
 
       lodashStable.times(2, function(index) {
@@ -19223,6 +19306,51 @@
         assert.strictEqual(compiled(data), expected);
         lodashStable.assign(_.templateSettings, settingsClone);
       });
+    });
+
+    QUnit.test('should use a `with` statement by default', function(assert) {
+      assert.expect(1);
+
+      var compiled = _.template('<%= index %><%= collection[index] %><% _.each(collection, function(value, index) { %><%= index %><% }); %>'),
+          actual = compiled({ 'index': 1, 'collection': ['a', 'b', 'c'] });
+
+      assert.strictEqual(actual, '1b012');
+    });
+
+    QUnit.test('should use `_.templateSettings.imports._.templateSettings`', function(assert) {
+      assert.expect(1);
+
+      var lodash = _.templateSettings.imports._,
+          settingsClone = lodashStable.clone(lodash.templateSettings);
+
+      lodash.templateSettings = lodashStable.assign(lodash.templateSettings, {
+        'interpolate': /\{\{=([\s\S]+?)\}\}/g
+      });
+
+      var compiled = _.template('{{= a }}');
+      assert.strictEqual(compiled({ 'a': 1 }), '1');
+
+      if (settingsClone) {
+        lodashStable.assign(lodash.templateSettings, settingsClone);
+      } else {
+        delete lodash.templateSettings;
+      }
+    });
+
+    QUnit.test('should fallback to `_.templateSettings`', function(assert) {
+      assert.expect(1);
+
+      var lodash = _.templateSettings.imports._,
+          delimiter = _.templateSettings.interpolate;
+
+      _.templateSettings.imports._ = { 'escape': lodashStable.escape };
+      _.templateSettings.interpolate = /\{\{=([\s\S]+?)\}\}/g;
+
+      var compiled = _.template('{{= a }}');
+      assert.strictEqual(compiled({ 'a': 1 }), '1');
+
+      _.templateSettings.imports._ = lodash;
+      _.templateSettings.interpolate = delimiter;
     });
 
     QUnit.test('should ignore `null` delimiters', function(assert) {
@@ -19251,54 +19379,11 @@
       });
     });
 
-    QUnit.test('should work with strings without delimiters', function(assert) {
+    QUnit.test('should work without delimiters', function(assert) {
       assert.expect(1);
 
       var expected = 'abc';
       assert.strictEqual(_.template(expected)({}), expected);
-    });
-
-    QUnit.test('should support the "imports" option', function(assert) {
-      assert.expect(1);
-
-      var compiled = _.template('<%= a %>', { 'imports': { 'a': 1 } });
-      assert.strictEqual(compiled({}), '1');
-    });
-
-    QUnit.test('should support the "variable" options', function(assert) {
-      assert.expect(1);
-
-      var compiled = _.template(
-        '<% _.each( data.a, function( value ) { %>' +
-            '<%= value.valueOf() %>' +
-        '<% }) %>', { 'variable': 'data' }
-      );
-
-      var data = { 'a': [1, 2, 3] };
-
-      try {
-        assert.strictEqual(compiled(data), '123');
-      } catch (e) {
-        assert.ok(false, e.message);
-      }
-    });
-
-    QUnit.test('should support the legacy `options` argument signature', function(assert) {
-      assert.expect(1);
-
-      var compiled = _.template('<%= data.a %>', null, { 'variable': 'data' }),
-          data = { 'a': 1 };
-
-      assert.strictEqual(compiled(data), '1');
-    });
-
-    QUnit.test('should use a `with` statement by default', function(assert) {
-      assert.expect(1);
-
-      var compiled = _.template('<%= index %><%= collection[index] %><% _.each(collection, function(value, index) { %><%= index %><% }); %>'),
-          actual = compiled({ 'index': 1, 'collection': ['a', 'b', 'c'] });
-
-      assert.strictEqual(actual, '1b012');
     });
 
     QUnit.test('should work with `this` references', function(assert) {
@@ -19426,7 +19511,7 @@
       assert.expect(1);
 
       var values = [, null, undefined, ''],
-          expected = lodashStable.map(values, lodashStable.constant('')),
+          expected = lodashStable.map(values, alwaysEmptyString),
           data = { 'a': 1 };
 
       var actual = lodashStable.map(values, function(value, index) {
@@ -19507,12 +19592,12 @@
       assert.ok(pass, '`options` value');
     });
 
-    QUnit.test('should expose the source for compiled templates', function(assert) {
+    QUnit.test('should expose the source on compiled templates', function(assert) {
       assert.expect(1);
 
       var compiled = _.template('x'),
           values = [String(compiled), compiled.source],
-          expected = lodashStable.map(values, lodashStable.constant(true));
+          expected = lodashStable.map(values, alwaysTrue);
 
       var actual = lodashStable.map(values, function(value) {
         return lodashStable.includes(value, '__p');
@@ -19521,7 +19606,7 @@
       assert.deepEqual(actual, expected);
     });
 
-    QUnit.test('should expose the source when a SyntaxError occurs', function(assert) {
+    QUnit.test('should expose the source on SyntaxErrors', function(assert) {
       assert.expect(1);
 
       try {
@@ -19544,7 +19629,7 @@
       } catch (e) {
         values[1] = e.source;
       }
-      var expected = lodashStable.map(values, lodashStable.constant(false));
+      var expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(values, function(value) {
         return lodashStable.includes(value, 'sourceURL');
@@ -20118,7 +20203,7 @@
       assert.expect(1);
 
       var values = falsey.concat(-1, -Infinity),
-          expected = lodashStable.map(values, lodashStable.constant([]));
+          expected = lodashStable.map(values, alwaysEmptyArray);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.times(value) : _.times();
@@ -20680,7 +20765,7 @@
       assert.expect(1);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant(''));
+          expected = lodashStable.map(values, alwaysEmptyString);
 
       var actual = lodashStable.map(values, function(value, index) {
         return index ? _.toString(value) : _.toString();
@@ -20742,7 +20827,7 @@
       assert.expect(4);
 
       var accumulators = [, null, undefined],
-          expected = lodashStable.map(accumulators, lodashStable.constant(true)),
+          expected = lodashStable.map(accumulators, alwaysTrue),
           object = new Foo;
 
       var iteratee = function(result, value, key) {
@@ -20762,7 +20847,7 @@
       assert.deepEqual(actual, expected);
 
       expected = lodashStable.map(accumulators, lodashStable.constant({ 'a': 1, 'b': 4, 'c': 9 }));
-      actual = lodashStable.map(results, lodashStable.cloneDeep);
+      actual = lodashStable.map(results, lodashStable.toPlainObject);
 
       assert.deepEqual(actual, expected);
 
@@ -20781,7 +20866,7 @@
     QUnit.test('should create regular arrays from typed arrays', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(typedArrays, lodashStable.constant(true));
+      var expected = lodashStable.map(typedArrays, alwaysTrue);
 
       var actual = lodashStable.map(typedArrays, function(type) {
         var Ctor = root[type],
@@ -20847,12 +20932,12 @@
       assert.ok(_.transform(new Foo) instanceof Foo);
     });
 
-    QUnit.test('should check that `object` is an object before using its `[[Prototype]]`', function(assert) {
+    QUnit.test('should ensure `object` is an object before using its `[[Prototype]]`', function(assert) {
       assert.expect(2);
 
       var Ctors = [Boolean, Boolean, Number, Number, Number, String, String],
           values = [true, false, 0, 1, NaN, '', 'a'],
-          expected = lodashStable.map(values, lodashStable.constant({}));
+          expected = lodashStable.map(values, alwaysEmptyObject);
 
       var results = lodashStable.map(values, function(value) {
         return _.transform(value);
@@ -20860,7 +20945,7 @@
 
       assert.deepEqual(results, expected);
 
-      expected = lodashStable.map(values, lodashStable.constant(false));
+      expected = lodashStable.map(values, alwaysFalse);
 
       var actual = lodashStable.map(results, function(value, index) {
         return value instanceof Ctors[index];
@@ -20869,7 +20954,7 @@
       assert.deepEqual(actual, expected);
     });
 
-    QUnit.test('should check that `object` constructor is a function before using its `[[Prototype]]`', function(assert) {
+    QUnit.test('should ensure `object` constructor is a function before using its `[[Prototype]]`', function(assert) {
       assert.expect(1);
 
       Foo.prototype.constructor = null;
@@ -20880,7 +20965,7 @@
     QUnit.test('should create an empty object when provided a falsey `object` argument', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant({}));
+      var expected = lodashStable.map(falsey, alwaysEmptyObject);
 
       var actual = lodashStable.map(falsey, function(object, index) {
         return index ? _.transform(object) : _.transform();
@@ -20921,7 +21006,7 @@
         return lodashStable.isObject(value) && !lodashStable.isElement(value);
       });
 
-      var expected = lodashStable.map(objects, lodashStable.constant(true));
+      var expected = lodashStable.map(objects, alwaysTrue);
 
       var actual = lodashStable.map(objects, function(object) {
         var Ctor = object.constructor,
@@ -21877,7 +21962,7 @@
       assert.expect(1);
 
       var operators = ['\xac', '\xb1', '\xd7', '\xf7'],
-          expected = lodashStable.map(operators, lodashStable.constant([])),
+          expected = lodashStable.map(operators, alwaysEmptyArray),
           actual = lodashStable.map(operators, _.words);
 
       assert.deepEqual(actual, expected);
@@ -21952,7 +22037,7 @@
       assert.expect(1);
 
       var values = [, null, undefined],
-          expected = lodashStable.map(values, lodashStable.constant('a'));
+          expected = lodashStable.map(values, alwaysA);
 
       var actual = lodashStable.map(values, function(value, index) {
         var wrapped = index ? _.wrap('a', value) : _.wrap('a');
@@ -22250,7 +22335,7 @@
     QUnit.test('`_.' + methodName + '` should treat falsey values as empty arrays', function(assert) {
       assert.expect(1);
 
-      var expected = lodashStable.map(falsey, lodashStable.constant([]));
+      var expected = lodashStable.map(falsey, alwaysEmptyArray);
 
       var actual = lodashStable.map(falsey, function(value) {
         return func([value, value, value]);
@@ -22972,7 +23057,7 @@
         assert.expect(1);
 
         var values = [, null, undefined, ''],
-            expected = lodashStable.map(values, lodashStable.constant(''));
+            expected = lodashStable.map(values, alwaysEmptyString);
 
         var actual = lodashStable.map(values, function(value, index) {
           return index ? func(value) : func();
@@ -23078,7 +23163,7 @@
     QUnit.test('should accept falsey arguments', function(assert) {
       assert.expect(287);
 
-      var emptyArrays = lodashStable.map(falsey, lodashStable.constant([]));
+      var emptyArrays = lodashStable.map(falsey, alwaysEmptyArray);
 
       lodashStable.each(acceptFalsey, function(methodName) {
         var expected = emptyArrays,
@@ -23143,7 +23228,7 @@
       assert.expect(24);
 
       lodashStable.each(rejectFalsey, function(methodName) {
-        var expected = lodashStable.map(falsey, lodashStable.constant(true)),
+        var expected = lodashStable.map(falsey, alwaysTrue),
             func = _[methodName];
 
         var actual = lodashStable.map(falsey, function(value, index) {

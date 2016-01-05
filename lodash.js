@@ -2272,7 +2272,7 @@
      * @returns {Function} Returns the new function.
      */
     function baseConforms(source) {
-      var props = keysIn(source),
+      var props = keys(source),
           length = props.length;
 
       return function(object) {
@@ -4834,7 +4834,7 @@
      */
     function initCloneArray(array) {
       var length = array.length,
-          result = new array.constructor(length);
+          result = array.constructor(length);
 
       // Add properties assigned by `RegExp#exec`.
       if (length && typeof array[0] == 'string' && hasOwnProperty.call(array, 'index')) {
@@ -4853,7 +4853,7 @@
      */
     function initCloneObject(object) {
       var Ctor = object.constructor;
-      return (typeof Ctor == 'function' && Ctor instanceof Ctor) ? new Ctor : {};
+      return baseCreate(isFunction(Ctor) ? Ctor.prototype : undefined);
     }
 
     /**
@@ -9066,11 +9066,10 @@
      * **Note:** This method is loosely based on the
      * [structured clone algorithm](https://mdn.io/Structured_clone_algorithm)
      * and supports cloning arrays, array buffers, booleans, date objects, maps,
-     * numbers, `Object` objects, regexes, sets, strings, symbols, and typed arrays.
-     * The own enumerable properties of `arguments` objects and objects created
-     * by constructors other than `Object` are cloned as plain `Object` objects.
-     * An empty object is returned for uncloneable values such as error objects,
-     * functions, DOM nodes, and WeakMaps.
+     * numbers, `Object` objects, regexes, sets, strings, symbols, and typed
+     * arrays. The own enumerable properties of `arguments` objects are cloned
+     * as plain objects. An empty object is returned for uncloneable values such
+     * as error objects, functions, DOM nodes, and WeakMaps.
      *
      * @static
      * @memberOf _
@@ -12287,7 +12286,7 @@
      * @param {RegExp} [options.interpolate] The "interpolate" delimiter.
      * @param {string} [options.sourceURL] The sourceURL of the template's compiled source.
      * @param {string} [options.variable] The data object variable name.
-     * @param- {Object} [otherOptions] Enables the legacy `options` param signature.
+     * @param- {Object} [guard] Enables use as an iteratee for functions like `_.map`.
      * @returns {Function} Returns the compiled template function.
      * @example
      *
@@ -12355,16 +12354,16 @@
      *   };\
      * ');
      */
-    function template(string, options, otherOptions) {
+    function template(string, options, guard) {
       // Based on John Resig's `tmpl` implementation (http://ejohn.org/blog/javascript-micro-templating/)
       // and Laura Doktorova's doT.js (https://github.com/olado/doT).
       var settings = lodash.templateSettings;
 
-      if (otherOptions && isIterateeCall(string, options, otherOptions)) {
-        options = otherOptions = undefined;
+      if (guard && isIterateeCall(string, options, guard)) {
+        options = undefined;
       }
       string = toString(string);
-      options = assignInWith({}, otherOptions || options, settings, assignInDefaults);
+      options = assignInWith({}, options, settings, assignInDefaults);
 
       var imports = assignInWith({}, options.imports, settings.imports, assignInDefaults),
           importsKeys = keys(imports),
@@ -14440,7 +14439,7 @@
   else if (freeExports && freeModule) {
     // Export for Node.js.
     if (moduleExports) {
-      (freeModule.exports = _)._ = _
+      (freeModule.exports = _)._ = _;
     }
     // Export for CommonJS support.
     freeExports._ = _;
