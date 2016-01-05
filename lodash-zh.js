@@ -7,7 +7,6 @@
  * Available under MIT license <https://lodash.com/license>
  */
 ;(function () {
-
   /** Used as a safe reference for `undefined` in pre-ES5 environments. */
   var undefined;
 
@@ -5270,8 +5269,8 @@
     /*------------------------------------------------------------------------*/
 
     /**
-     * 将 array 拆分成多个 size 长度的块，并组成一个新数组。
-     * 如果 array 无法被分割成全部等长的块，那么最后剩余的元素将组成一个块。
+     * 将数组拆分成多个 size 长度的块，并组成一个新数组。
+     * 如果数组无法被分割成全部等长的块，那么最后剩余的元素将组成一个块。
      *
      * @static
      * @memberOf _
@@ -5305,14 +5304,14 @@
     }
 
     /**
-     * Creates an array with all falsey values removed. The values `false`, `null`,
-     * `0`, `""`, `undefined`, and `NaN` are falsey.
+     * 创建一个移除了所有假值的数组。例如：`false`、`null`、
+     * `0`、`""`、`undefined`， 以及`NaN` 都是 “假值”.
      *
      * @static
      * @memberOf _
      * @category Array
-     * @param {Array} array The array to compact.
-     * @returns {Array} Returns the new array of filtered values.
+     * @param {Array} array 需要被处理的数组。
+     * @returns {Array} 返回移除了假值的数组。
      * @example
      *
      * _.compact([0, 1, false, 2, '', 3]);
@@ -5334,15 +5333,14 @@
     }
 
     /**
-     * Creates a new array concatenating `array` with any additional arrays
-     * and/or values.
+     * 创建一个用任何数组 或 值连接的新数组。
      *
      * @static
      * @memberOf _
      * @category Array
-     * @param {Array} array The array to concatenate.
-     * @param {...*} [values] The values to concatenate.
-     * @returns {Array} Returns the new concatenated array.
+     * @param {Array} array 需要被连接的数组
+     * @param {...*} [values] 需要被连接的值的队列 
+     * @returns {Array} 返回连接后的新数组
      * @example
      *
      * var array = [1];
@@ -5360,16 +5358,14 @@
     });
 
     /**
-     * Creates an array of unique `array` values not included in the other
-     * provided arrays using [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
-     * for equality comparisons.
+     * 创建一个差异化后的数组，不包括使用 [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero) 方法提供的数组。
      *
      * @static
      * @memberOf _
      * @category Array
-     * @param {Array} array The array to inspect.
-     * @param {...Array} [values] The values to exclude.
-     * @returns {Array} Returns the new array of filtered values.
+     * @param {Array} array 需要被处理的数组
+     * @param {...Array} [values] 用于进行过滤的数组
+     * @returns {Array} 返回一个差异化后的新数组
      * @example
      *
      * _.difference([3, 2, 1], [4, 2]);

@@ -7,7 +7,7 @@
  * Available under MIT license <https://lodash.com/license>
  */
 ;(function() {
-
+  
   /** Used as a safe reference for `undefined` in pre-ES5 environments. */
   var undefined;
 
