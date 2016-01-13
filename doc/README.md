@@ -6,7 +6,7 @@
 
 ## `Array`
 * <a href="#_chunkarray-size0">`_.chunk`</a>
-* <a href="#_compactarray">`_.compact`</a>
+* <a href="#_compactarray">`_.compact`</a>M
 * <a href="#_concatarray-values">`_.concat`</a>
 * <a href="#_differencearray-values">`_.difference`</a>
 * <a href="#_differencebyarray-values-iteratee_identity">`_.differenceBy`</a>
@@ -4579,7 +4579,7 @@ _.isMatch(object, { 'age': 36 });
 
 This method is like `_.isMatch` except that it accepts `customizer` which
 is invoked to compare values. If `customizer` returns `undefined` comparisons
-are handled by the method instead. The `customizer` is invoked with three
+are handled by the method instead. The `customizer` is invoked with five
 arguments: (objValue, srcValue, index|key, object, source).
 
 #### Arguments
