@@ -75,9 +75,9 @@ module.exports = {
   'aryMethod': {
     1:[
         'attempt', 'ceil', 'create', 'curry', 'curryRight', 'floor', 'fromPairs',
-        'invert', 'iteratee', 'memoize', 'method', 'methodOf', 'mixin', 'over',
-        'overEvery', 'overSome', 'rest', 'reverse', 'round', 'runInContext',
-        'template', 'trim', 'trimEnd', 'trimStart', 'uniqueId', 'words'
+        'iteratee', 'memoize', 'method', 'methodOf', 'mixin', 'over', 'overEvery',
+        'overSome', 'rest', 'reverse', 'round', 'runInContext', 'template', 'trim',
+        'trimEnd', 'trimStart', 'uniqueId', 'words'
       ],
     2:[
         'add', 'after', 'ary', 'assign', 'at', 'before', 'bind', 'bindKey',
