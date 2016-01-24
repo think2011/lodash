@@ -143,6 +143,9 @@
 
   /*--------------------------------------------------------------------------*/
 
+  // Leak to avoid sporadic `noglobals` fails on Edge in Sauce Labs.
+  root.msWDfn = undefined;
+
   // Exit early if going to run tests in a PhantomJS web page.
   if (phantom && isModularize) {
     var page = require('webpage').create();
@@ -188,7 +191,8 @@
   /*--------------------------------------------------------------------------*/
 
   /** Used to test Web Workers. */
-  var Worker = !(ui.isForeign || ui.isSauceLabs || isModularize) && (document && document.origin != 'null') && root.Worker;
+  var Worker = !(ui.isForeign || ui.isSauceLabs || isModularize) &&
+    (document && document.origin != 'null') && root.Worker;
 
   /** Used to test host objects in IE. */
   try {
@@ -213,10 +217,18 @@
   var QUnit = root.QUnit || (root.QUnit = load('../node_modules/qunitjs/qunit/qunit.js'));
 
   /** Load stable Lodash and QUnit Extras. */
-  var lodashStable = root.lodashStable || load('../node_modules/lodash/index.js');
-  if (lodashStable) {
-    lodashStable = lodashStable.runInContext(root);
+  var lodashStable = root.lodashStable;
+  if (!lodashStable) {
+    try {
+      lodashStable = load('../node_modules/lodash/index.js');
+    } catch (e) {
+      console.log('Error: The stable lodash dev dependency should be at least a version behind master branch.');
+      return;
+    }
+    lodashStable = lodashStable.noConflict();
   }
+  lodashStable = lodashStable.runInContext(root);
+
   var QUnitExtras = load('../node_modules/qunit-extras/qunit-extras.js');
   if (QUnitExtras) {
     QUnitExtras.runInContext(root);
@@ -270,15 +282,6 @@
     'i',  'd', 'n', 'o', 'o', 'o', 'o',  'o',  'o', 'u', 'u', 'u', 'u', 'y', 'th', 'y'
   ];
 
-  /** List of emoji modifiers. */
-  var emojiModifiers = [
-    '\ud83c\udffb',
-    '\ud83c\udffc',
-    '\ud83c\udffd',
-    '\ud83c\udffe',
-    '\ud83c\udfff'
-  ];
-
   /** Used to specify the emoji style glyph variant of characters. */
   var emojiVar = '\ufe0f';
 
@@ -299,6 +302,15 @@
     new URIError
   ];
 
+  /** List of fitzpatrick modifiers. */
+  var fitzModifiers = [
+    '\ud83c\udffb',
+    '\ud83c\udffc',
+    '\ud83c\udffd',
+    '\ud83c\udffe',
+    '\ud83c\udfff'
+  ];
+
   /** Used to check whether methods support typed arrays. */
   var typedArrays = [
     'Float32Array',
@@ -316,7 +328,19 @@
    * Used to check for problems removing whitespace. For a whitespace reference,
    * see [V8's unit test](https://code.google.com/p/v8/source/browse/branches/bleeding_edge/test/mjsunit/whitespaces.js).
    */
-  var whitespace = ' \t\x0b\f\xa0\ufeff\n\r\u2028\u2029\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000';
+  var whitespace = lodashStable.filter([
+    // Basic whitespace characters.
+    ' ', '\t', '\x0b', '\f', '\xa0', '\ufeff',
+
+    // Line terminators.
+    '\n', '\r', '\u2028', '\u2029',
+
+    // Unicode category "Zs" space separators.
+    '\u1680', '\u180e', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005',
+    '\u2006', '\u2007', '\u2008', '\u2009', '\u200a', '\u202f', '\u205f', '\u3000'
+  ],
+  function(chr) { return /\s/.exec(chr); })
+  .join('');
 
   /**
    * Extracts the unwrapped value from its wrapper.
@@ -445,6 +469,7 @@
     setProperty(Object, 'getOwnPropertySymbols', undefined);
 
     setProperty(root, 'Set', noop);
+    setProperty(root, 'Symbol', undefined);
     setProperty(root, 'WeakMap', noop);
 
     // Fake `WinRTError`.
@@ -472,6 +497,11 @@
       setProperty(root, 'Set', Set);
     } else {
       delete root.Set;
+    }
+    if (Symbol) {
+      setProperty(root, 'Symbol', Symbol);
+    } else {
+      delete root.Symbol;
     }
     if (WeakMap) {
       setProperty(root, 'WeakMap', WeakMap);
@@ -607,6 +637,7 @@
   /*--------------------------------------------------------------------------*/
 
   if (params) {
+    console.log('Running lodash tests.');
     console.log('test.js invoked with arguments: ' + JSON.stringify(slice.call(params)));
   }
 
@@ -684,7 +715,7 @@
     });
 
     QUnit.test('should avoid overwritten native methods', function(assert) {
-      assert.expect(5);
+      assert.expect(6);
 
       function message(lodashMethod, nativeMethod) {
         return '`' + lodashMethod + '` should avoid overwritten native `' + nativeMethod + '`';
@@ -729,7 +760,22 @@
         } catch (e) {
           actual = null;
         }
-        assert.deepEqual(actual, [object, object], 'Object.getOwnPropertySymbols');
+        label = message('_.clone` and `_.cloneDeep', 'Object.getOwnPropertySymbols');
+        assert.deepEqual(actual, [object, object], label);
+
+        try {
+          var symObject = Object(symbol);
+          symObject.constructor = Object;
+          actual = [
+            Symbol ? lodashBizarro.clone(symObject) : {},
+            Symbol ? lodashBizarro.isEqual(symObject, Object(symbol)) : false,
+            Symbol ? lodashBizarro.toString(symObject) : ''
+          ];
+        } catch (e) {
+          actual = null;
+        }
+        label = message('_.clone`, `_.isEqual`, and `_.toString', 'Symbol');
+        assert.deepEqual(actual, [{}, false, ''], label);
 
         try {
           var map = new lodashBizarro.memoize.Cache;
@@ -753,7 +799,7 @@
         assert.deepEqual(actual, [], label);
       }
       else {
-        skipTest(assert, 5);
+        skipTest(assert, 6);
       }
     });
   }());
@@ -2002,9 +2048,9 @@
 
       var actual = lodashStable.reduce(funcs, function(result, func) {
         return func(result);
-      }, 'enable 24h format');
+      }, 'enable 6h format');
 
-      assert.strictEqual(actual, 'enable24hFormat');
+      assert.strictEqual(actual, 'enable6HFormat');
     });
   }());
 
@@ -2014,10 +2060,11 @@
 
   (function() {
     QUnit.test('should work with numbers', function(assert) {
-      assert.expect(5);
+      assert.expect(6);
 
       assert.strictEqual(_.camelCase('12 feet'), '12Feet');
-      assert.strictEqual(_.camelCase('enable 24h format'), 'enable24hFormat');
+      assert.strictEqual(_.camelCase('enable 6h format'), 'enable6HFormat');
+      assert.strictEqual(_.camelCase('enable 24H format'), 'enable24HFormat');
       assert.strictEqual(_.camelCase('too legit 2 quit'), 'tooLegit2Quit');
       assert.strictEqual(_.camelCase('walk 500 miles'), 'walk500Miles');
       assert.strictEqual(_.camelCase('xhr2 request'), 'xhr2Request');
@@ -2084,7 +2131,7 @@
       }
     });
 
-    QUnit.test('should enable chaining of methods that return unwrapped values by default', function(assert) {
+    QUnit.test('should enable chaining for methods that return unwrapped values', function(assert) {
       assert.expect(6);
 
       if (!isNpm) {
@@ -2479,6 +2526,14 @@
         assert.ok(func(new Foo) instanceof Foo);
       });
 
+      QUnit.test('should ensure `value` constructor is a function before using its `[[Prototype]]`', function(assert) {
+        assert.expect(1);
+
+        Foo.prototype.constructor = null;
+        assert.notOk(func(new Foo) instanceof Foo);
+        Foo.prototype.constructor = Foo;
+      });
+
       QUnit.test('`_.' + methodName + '` should clone properties that shadow those on `Object.prototype`', function(assert) {
         assert.expect(2);
 
@@ -2772,6 +2827,36 @@
       assert.deepEqual(array, [1]);
     });
 
+    QUnit.test('should return an empty array when `array` is nullish', function(assert) {
+      assert.expect(1);
+
+      var values = [, null, undefined],
+          expected = lodashStable.map(values, alwaysEmptyArray);
+
+      var actual = lodashStable.map(values, function(value, index) {
+        try {
+          return index ? _.concat(value) : _.concat();
+        } catch (e) {}
+      });
+
+      assert.deepEqual(actual, expected);
+    });
+
+    QUnit.test('should treat nullish `array` values as empty arrays', function(assert) {
+      assert.expect(1);
+
+      var values = [null, undefined],
+          expected = lodashStable.map(values, lodashStable.constant([1, 2, [3]]));
+
+      var actual = lodashStable.map(values, function(value) {
+        try {
+          return _.concat(value, 1, [2], [[3]]);
+        } catch (e) {}
+      });
+
+      assert.deepEqual(actual, expected);
+    });
+
     QUnit.test('should treat sparse arrays as dense', function(assert) {
       assert.expect(3);
 
@@ -2819,6 +2904,24 @@
       assert.strictEqual(cond({ 'a':  1, 'b': 2, 'c': 3 }), 'a');
       assert.strictEqual(cond({ 'a':  0, 'b': 1, 'c': 2 }), 'b');
       assert.strictEqual(cond({ 'a': -1, 'b': 0, 'c': 1 }), 'c');
+    });
+
+    QUnit.test('should provide arguments to functions', function(assert) {
+      assert.expect(2);
+
+      var args1,
+          args2,
+          expected = ['a', 'b', 'c'];
+
+      var cond = _.cond([[
+        function() { args1 || (args1 = slice.call(arguments)); return true; },
+        function() { args2 || (args2 = slice.call(arguments)); }
+      ]]);
+
+      cond('a', 'b', 'c');
+
+      assert.deepEqual(args1, expected);
+      assert.deepEqual(args2, expected);
     });
 
     QUnit.test('should work with predicate shorthands', function(assert) {
@@ -3579,6 +3682,18 @@
         assert.deepEqual(actual, expected);
       });
     });
+
+    QUnit.test('`_.' + methodName + '` should work for function names that shadow those on `Object.prototype`', function(assert) {
+      assert.expect(1);
+
+      var curried = _.curry(function hasOwnProperty(a, b, c) {
+        return [a, b, c];
+      });
+
+      var expected = [1, 2, 3];
+
+      assert.deepEqual(curried(1)(2)(3), expected);
+    });
   });
 
   /*--------------------------------------------------------------------------*/
@@ -3935,6 +4050,16 @@
       assert.strictEqual(actual.a.b, null);
     });
 
+    QUnit.test('should not convert function properties to objects', function(assert) {
+      assert.expect(2);
+
+      var actual = _.defaultsDeep({}, { 'a': noop });
+      assert.strictEqual(actual.a, noop);
+
+      actual = _.defaultsDeep({}, { 'a': { 'b': noop } });
+      assert.strictEqual(actual.a.b, noop);
+    });
+
     QUnit.test('should overwrite `undefined` values', function(assert) {
       assert.expect(1);
 
@@ -4080,6 +4205,25 @@
         assert.deepEqual(args, [1, 2]);
         done();
       }, 64);
+    });
+
+    QUnit.test('should use a default `wait` of `0`', function(assert) {
+      assert.expect(2);
+
+      var done = assert.async();
+
+      var pass = false;
+
+      _.delay(function() {
+        pass = true;
+      });
+
+      assert.notOk(pass);
+
+      setTimeout(function() {
+        assert.ok(pass);
+        done();
+      }, 0);
     });
 
     QUnit.test('should be cancelable', function(assert) {
@@ -5276,32 +5420,6 @@
 
   /*--------------------------------------------------------------------------*/
 
-  QUnit.module('lodash.flattenDeep');
-
-  (function() {
-    QUnit.test('should flatten arrays with circular references', function(assert) {
-      assert.expect(2);
-
-      var array = [1, 2];
-      array.push(array);
-
-      var expected = [1, 2, 1, 2];
-
-      try {
-        var actual = _.flattenDeep(array);
-      } catch (e) {}
-
-      assert.deepEqual(actual, expected);
-
-      array = [1, 2];
-      array = [array, [array]];
-
-      assert.deepEqual(_.flattenDeep(array), expected);
-    });
-  }());
-
-  /*--------------------------------------------------------------------------*/
-
   QUnit.module('flatten methods');
 
   (function() {
@@ -5692,6 +5810,8 @@
     ];
 
     var unwrappedMethods = [
+      'each',
+      'eachRight',
       'every',
       'find',
       'findIndex',
@@ -5717,6 +5837,7 @@
           func = _[methodName],
           isBy = /(^partition|By)$/.test(methodName),
           isFind = /^find/.test(methodName),
+          isOmitPick = /^(?:omit|pick)By$/.test(methodName),
           isSome = methodName == 'some';
 
       QUnit.test('`_.' + methodName + '` should provide the correct iteratee arguments', function(assert) {
@@ -5738,7 +5859,7 @@
             expected[1] += '';
           }
           if (isBy) {
-            expected.length = 1;
+            expected.length = isOmitPick ? 2 : 1;
           }
           assert.deepEqual(args, expected);
         }
@@ -5754,11 +5875,13 @@
           var array = [1];
           array[2] = 3;
 
-          var expected = [[1, 0, array], [undefined, 1, array], [3, 2, array]];
+          var expected = lodashStable.includes(objectMethods, methodName)
+            ? [[1, '0', array], [undefined, '1', array], [3, '2', array]]
+            : [[1,  0, array],  [undefined,  1,  array], [3,  2,  array]];
 
           if (isBy) {
             expected = lodashStable.map(expected, function(args) {
-              return args.slice(0, 1);
+              return args.slice(0, isOmitPick ? 2 : 1);
             });
           }
           else if (lodashStable.includes(objectMethods, methodName)) {
@@ -6029,17 +6152,22 @@
       }
     });
 
-    QUnit.test('`_.' + methodName + '` should not error when `object` is nullish and sources are provided', function(assert) {
-      assert.expect(1);
+    QUnit.test('`_.' + methodName + '` should create an object when `object` is nullish', function(assert) {
+      assert.expect(2);
 
-      var expected = lodashStable.times(2, alwaysTrue);
+      var source = { 'a': 1 },
+          values = [null, undefined],
+          expected = lodashStable.map(values, alwaysTrue);
 
-      var actual = lodashStable.map([null, undefined], function(value) {
-        try {
-          return lodashStable.isEqual(func(value, { 'a': 1 }), {});
-        } catch (e) {
-          return false;
-        }
+      var actual = lodashStable.map(values, function(value) {
+        var object = func(value, source);
+        return object !== source && lodashStable.isEqual(object, source);
+      });
+
+      assert.deepEqual(actual, expected);
+
+      actual = lodashStable.map(values, function(value) {
+        return lodashStable.isEqual(func(value), {});
       });
 
       assert.deepEqual(actual, expected);
@@ -6253,13 +6381,13 @@
   QUnit.module('lodash.fromPairs');
 
   (function() {
-    var object = { 'barney': 36, 'fred': 40 },
-        array = [['barney', 36], ['fred', 40]];
-
     QUnit.test('should accept a two dimensional array', function(assert) {
       assert.expect(1);
 
-      var actual = _.fromPairs(array);
+      var array = [['a', 1], ['b', 2]],
+          object = { 'a': 1, 'b': 2 },
+          actual = _.fromPairs(array);
+
       assert.deepEqual(actual, object);
     });
 
@@ -6277,16 +6405,17 @@
       assert.deepEqual(actual, expected);
     });
 
-    QUnit.test('should support deep paths', function(assert) {
+    QUnit.test('should not support deep paths', function(assert) {
       assert.expect(1);
 
       var actual = _.fromPairs([['a.b.c', 1]]);
-      assert.deepEqual(actual, { 'a': { 'b': { 'c': 1 } } });
+      assert.deepEqual(actual, { 'a.b.c': 1 });
     });
 
     QUnit.test('should support consuming the return value of `_.toPairs`', function(assert) {
       assert.expect(1);
 
+      var object = { 'a.b.c': 1 };
       assert.deepEqual(_.fromPairs(_.toPairs(object)), object);
     });
 
@@ -7245,43 +7374,18 @@
       assert.deepEqual(_.invert(actual), { 'a': '1', 'b': '2' });
     });
 
+    QUnit.test('should work with values that shadow keys on `Object.prototype`', function(assert) {
+      assert.expect(1);
+
+      var object = { 'a': 'hasOwnProperty', 'b': 'constructor' };
+      assert.deepEqual(_.invert(object), { 'hasOwnProperty': 'a', 'constructor': 'b' });
+    });
+
     QUnit.test('should work with an object that has a `length` property', function(assert) {
       assert.expect(1);
 
       var object = { '0': 'a', '1': 'b', 'length': 2 };
       assert.deepEqual(_.invert(object), { 'a': '0', 'b': '1', '2': 'length' });
-    });
-
-    QUnit.test('should accept a `multiValue` flag', function(assert) {
-      assert.expect(1);
-
-      var object = { 'a': 1, 'b': 2, 'c': 1 };
-      assert.deepEqual(_.invert(object, true), { '1': ['a', 'c'], '2': ['b'] });
-    });
-
-    QUnit.test('should only add multiple values to own, not inherited, properties', function(assert) {
-      assert.expect(2);
-
-      var object = { 'a': 'hasOwnProperty', 'b': 'constructor' };
-
-      assert.deepEqual(_.invert(object), { 'hasOwnProperty': 'a', 'constructor': 'b' });
-      assert.ok(lodashStable.isEqual(_.invert(object, true), { 'hasOwnProperty': ['a'], 'constructor': ['b'] }));
-    });
-
-    QUnit.test('should work as an iteratee for methods like `_.map`', function(assert) {
-      assert.expect(2);
-
-      var regular = { 'a': 1, 'b': 2, 'c': 1 },
-          inverted = { '1': 'c', '2': 'b' };
-
-      var array = [regular, regular, regular],
-          object = { 'a': regular, 'b': regular, 'c': regular },
-          expected = lodashStable.map(array, lodashStable.constant(inverted));
-
-      lodashStable.each([array, object], function(collection) {
-        var actual = lodashStable.map(collection, _.invert);
-        assert.deepEqual(actual, expected);
-      });
     });
 
     QUnit.test('should return a wrapped value when chaining', function(assert) {
@@ -8081,6 +8185,15 @@
       object2 = { 'a': 1, 'b': 2, 'c': 3 };
 
       assert.strictEqual(_.isEqual(object1, object2), false);
+    });
+
+    QUnit.test('should compare objects regardless of key order', function(assert) {
+      assert.expect(1);
+
+      var object1 = { 'a': 1, 'b': 2, 'c': 3 },
+          object2 = { 'c': 3, 'a': 1, 'b': 2 };
+
+      assert.strictEqual(_.isEqual(object1, object2), true);
     });
 
     QUnit.test('should compare nested objects', function(assert) {
@@ -13012,7 +13125,7 @@
       assert.deepEqual(actual, expected);
     });
 
-    QUnit.test('should work with a function for `object`', function(assert) {
+    QUnit.test('should merge onto function `object` values', function(assert) {
       assert.expect(2);
 
       function Foo() {}
@@ -13024,7 +13137,28 @@
       assert.strictEqual(Foo.a, 1);
     });
 
-    QUnit.test('should work with a non-plain `object`', function(assert) {
+    QUnit.test('should not merge onto nested function values', function(assert) {
+      assert.expect(3);
+
+      var source1 = { 'a': function() {} },
+          source2 = { 'a': { 'b': 1 } },
+          actual = _.merge({}, source1, source2),
+          expected = { 'a': { 'b': 1 } };
+
+      assert.deepEqual(actual, expected);
+
+      source1 = { 'a': function() {} };
+      source2 = { 'a': { 'b': 1 } };
+
+      expected = { 'a': function() {} };
+      expected.a.b = 1;
+
+      actual = _.merge(source1, source2);
+      assert.strictEqual(typeof actual.a, 'function');
+      assert.strictEqual(actual.a.b, 1);
+    });
+
+    QUnit.test('should merge onto non-plain `object` values', function(assert) {
       assert.expect(2);
 
       function Foo() {}
@@ -13157,6 +13291,26 @@
       });
 
       assert.deepEqual(actual, expected);
+    });
+
+    QUnit.test('should not augment source objects', function(assert) {
+      assert.expect(6);
+
+      var source1 = { 'a': [{ 'a': 1 }] },
+          source2 = { 'a': [{ 'b': 2 }] },
+          actual = _.merge({}, source1, source2);
+
+      assert.deepEqual(source1.a, [{ 'a': 1 }]);
+      assert.deepEqual(source2.a, [{ 'b': 2 }]);
+      assert.deepEqual(actual.a, [{ 'a': 1, 'b': 2 }]);
+
+      var source1 = { 'a': [[1, 2, 3]] },
+          source2 = { 'a': [[3, 4]] },
+          actual = _.merge({}, source1, source2);
+
+      assert.deepEqual(source1.a, [[1, 2, 3]]);
+      assert.deepEqual(source2.a, [[3, 4]]);
+      assert.deepEqual(actual.a, [[3, 4, 3]]);
     });
 
     QUnit.test('should shallow clone array/typed-array/plain-object sources', function(assert) {
@@ -13795,7 +13949,7 @@
       }
     });
 
-    QUnit.test('should use `this` as the default `object` value', function(assert) {
+    QUnit.test('should use a default `object` of `this`', function(assert) {
       assert.expect(3);
 
       var object = lodashStable.create(_);
@@ -14148,6 +14302,20 @@
       }
     });
 
+    QUnit.test('should restore `_` only if `lodash` is the current `_` value', function(assert) {
+      assert.expect(2);
+
+      if (!isModularize) {
+        var object = root._ = {};
+        assert.strictEqual(_.noConflict(), oldDash);
+        assert.strictEqual(root._, object);
+        root._ = oldDash;
+      }
+      else {
+        skipTest(assert, 2);
+      }
+    });
+
     QUnit.test('should work with a `root` of `this`', function(assert) {
       assert.expect(2);
 
@@ -14432,7 +14600,7 @@
       assert.deepEqual(over(object), [false, true]);
     });
 
-    QUnit.test('should provide multiple arguments to predicates', function(assert) {
+    QUnit.test('should provide arguments to predicates', function(assert) {
       assert.expect(1);
 
       var over = _.over(function() {
@@ -14515,7 +14683,7 @@
       assert.strictEqual(over(), false);
     });
 
-    QUnit.test('should provide multiple arguments to predicates', function(assert) {
+    QUnit.test('should provide arguments to predicates', function(assert) {
       assert.expect(1);
 
       var args;
@@ -14617,7 +14785,7 @@
       assert.strictEqual(over(), true);
     });
 
-    QUnit.test('should provide multiple arguments to predicates', function(assert) {
+    QUnit.test('should provide arguments to predicates', function(assert) {
       assert.expect(1);
 
       var args;
@@ -16829,7 +16997,7 @@
       });
     });
 
-    QUnit.test('`_.' + methodName + '` should return the specified default value for `undefined` values', function(assert) {
+    QUnit.test('`_.' + methodName + '` should return the default value for `undefined` values', function(assert) {
       assert.expect(1);
 
       var object = { 'a': {} },
@@ -19660,7 +19828,7 @@
   (function() {
     var string = 'hi-diddly-ho there, neighborino';
 
-    QUnit.test('should truncate to a length of `30` by default', function(assert) {
+    QUnit.test('should use a default `length` of `30`', function(assert) {
       assert.expect(1);
 
       assert.strictEqual(_.truncate(string), 'hi-diddly-ho there, neighbo...');
@@ -19973,7 +20141,7 @@
       assert.ok(pass);
     });
 
-    QUnit.test('_.' + methodName + ' should have a default `wait` of `0`', function(assert) {
+    QUnit.test('_.' + methodName + ' should use a default `wait` of `0`', function(assert) {
       assert.expect(1);
 
       var done = assert.async();
@@ -20420,6 +20588,12 @@
       assert.strictEqual(_.toLength(0), 0);
       assert.strictEqual(_.toLength(3), 3);
       assert.strictEqual(_.toLength(MAX_ARRAY_LENGTH), MAX_ARRAY_LENGTH);
+    });
+
+    QUnit.test('should convert `-0` to `0`', function(assert) {
+      assert.expect(1);
+
+      assert.strictEqual(1 / _.toLength(-0), Infinity);
     });
   }());
 
@@ -21050,16 +21224,6 @@
       assert.strictEqual(func(string), expected);
     });
 
-    QUnit.test('`_.' + methodName + '` should not remove non-whitespace characters', function(assert) {
-      assert.expect(1);
-
-      // Zero-width space (zws), next line character (nel), and non-character (bom) are not whitespace.
-      var problemChars = '\x85\u200b\ufffe',
-          string = problemChars + 'a b c' + problemChars;
-
-      assert.strictEqual(func(string), string);
-    });
-
     QUnit.test('`_.' + methodName + '` should coerce `string` to a string', function(assert) {
       assert.expect(1);
 
@@ -21153,14 +21317,16 @@
     var flag = '\ud83c\uddfa\ud83c\uddf8',
         heart = '\u2764' + emojiVar,
         hearts = '\ud83d\udc95',
+        comboGlyph = '\ud83d\udc68\u200d' + heart + '\u200d\ud83d\udc8B\u200d\ud83d\udc68',
+        hashKeycap = '#' + emojiVar + '\u20e3',
         leafs = '\ud83c\udf42',
+        noMic = '\ud83c\udf99\u20e0',
         raisedHand = '\u270B' + emojiVar,
         rocket = '\ud83d\ude80',
-        thumbsUp = '\ud83d\udc4d',
-        comboGlyph = '\ud83d\udc68\u200d' + heart + '\u200d\ud83d\udc8B\u200d\ud83d\udc68';
+        thumbsUp = '\ud83d\udc4d';
 
     QUnit.test('should account for astral symbols', function(assert) {
-      assert.expect(25);
+      assert.expect(26);
 
       var allHearts = _.repeat(hearts, 10),
           chars = hearts + comboGlyph,
@@ -21191,6 +21357,7 @@
       assert.strictEqual(_.truncate(string, { 'length': 6 }), 'A ' + leafs + '...');
 
       assert.deepEqual(_.words(string), ['A', leafs, comboGlyph, 'and', rocket]);
+      assert.deepEqual(_.toArray(hashKeycap), [hashKeycap]);
 
       lodashStable.times(2, function(index) {
         var separator = index ? RegExp(hearts) : hearts,
@@ -21206,15 +21373,40 @@
       });
     });
 
-    QUnit.test('should match lone surrogates', function(assert) {
-      assert.expect(3);
+    QUnit.test('should account for combining diacritical marks', function(assert) {
+      assert.expect(1);
 
-      var pair = hearts.split(''),
-          surrogates = pair[0] + ' ' + pair[1];
+      var values = lodashStable.map(comboMarks, function(mark) {
+        return 'o' + mark;
+      });
 
-      assert.strictEqual(_.size(surrogates), 3);
-      assert.deepEqual(_.toArray(surrogates), [pair[0], ' ', pair[1]]);
-      assert.deepEqual(_.words(surrogates), []);
+      var expected = lodashStable.map(values, function(value) {
+        return [1, [value], [value]];
+      });
+
+      var actual = lodashStable.map(values, function(value) {
+        return [_.size(value), _.toArray(value), _.words(value)];
+      });
+
+      assert.deepEqual(actual, expected);
+    });
+
+    QUnit.test('should account for fitzpatrick modifiers', function(assert) {
+      assert.expect(1);
+
+      var values = lodashStable.map(fitzModifiers, function(modifier) {
+        return thumbsUp + modifier;
+      });
+
+      var expected = lodashStable.map(values, function(value) {
+        return [1, [value], [value]];
+      });
+
+      var actual = lodashStable.map(values, function(value) {
+        return [_.size(value), _.toArray(value), _.words(value)];
+      });
+
+      assert.deepEqual(actual, expected);
     });
 
     QUnit.test('should account for regional symbols', function(assert) {
@@ -21241,28 +21433,10 @@
       assert.deepEqual(_.words(heart), [heart]);
     });
 
-    QUnit.test('should account for modifiers', function(assert) {
+    QUnit.test('should account for variation selectors with fitzpatrick modifiers', function(assert) {
       assert.expect(1);
 
-      var values = lodashStable.map(emojiModifiers, function(modifier) {
-        return thumbsUp + modifier;
-      });
-
-      var expected = lodashStable.map(values, function(value) {
-        return [1, [value], [value]];
-      });
-
-      var actual = lodashStable.map(values, function(value) {
-        return [_.size(value), _.toArray(value), _.words(value)];
-      });
-
-      assert.deepEqual(actual, expected);
-    });
-
-    QUnit.test('should account for variation selectors with modifiers', function(assert) {
-      assert.expect(1);
-
-      var values = lodashStable.map(emojiModifiers, function(modifier) {
+      var values = lodashStable.map(fitzModifiers, function(modifier) {
         return raisedHand + modifier;
       });
 
@@ -21277,22 +21451,22 @@
       assert.deepEqual(actual, expected);
     });
 
-    QUnit.test('should account for combining diacritical marks', function(assert) {
+    QUnit.test('should match lone surrogates', function(assert) {
+      assert.expect(3);
+
+      var pair = hearts.split(''),
+          surrogates = pair[0] + ' ' + pair[1];
+
+      assert.strictEqual(_.size(surrogates), 3);
+      assert.deepEqual(_.toArray(surrogates), [pair[0], ' ', pair[1]]);
+      assert.deepEqual(_.words(surrogates), []);
+    });
+
+    QUnit.test('should match side by side fitzpatrick modifiers separately ', function(assert) {
       assert.expect(1);
 
-      var values = lodashStable.map(comboMarks, function(mark) {
-        return 'o' + mark;
-      });
-
-      var expected = lodashStable.map(values, function(value) {
-        return [1, [value], [value]];
-      });
-
-      var actual = lodashStable.map(values, function(value) {
-        return [_.size(value), _.toArray(value), _.words(value)];
-      });
-
-      assert.deepEqual(actual, expected);
+      var string = fitzModifiers[0] + fitzModifiers[0];
+      assert.deepEqual(_.toArray(string), [fitzModifiers[0], fitzModifiers[0]]);
     });
   }());
 
@@ -21865,7 +22039,12 @@
       assert.expect(1);
 
       var array = [[1, 4], [2, 5], [3, 6]];
-      assert.deepEqual(_.unzipWith(array, _.add), [6, 15]);
+
+      var actual = _.unzipWith(array, function(a, b, c) {
+        return a + b + c;
+      });
+
+      assert.deepEqual(actual, [6, 15]);
     });
 
     QUnit.test('should provide the correct `iteratee` arguments', function(assert) {
@@ -21877,7 +22056,7 @@
         args || (args = slice.call(arguments));
       });
 
-      assert.deepEqual(args, [1, 2, 1, [1, 2]]);
+      assert.deepEqual(args, [1, 2]);
     });
 
     QUnit.test('should perform a basic unzip when `iteratee` is nullish', function(assert) {
@@ -21985,10 +22164,12 @@
     });
 
     QUnit.test('should work with compound words', function(assert) {
-      assert.expect(7);
+      assert.expect(9);
 
       assert.deepEqual(_.words('12Feet'), ['12', 'Feet']);
-      assert.deepEqual(_.words('enable 24h format'), ['enable', '24h', 'format']);
+      assert.deepEqual(_.words('enable 6h format'), ['enable', '6', 'h', 'format']);
+      assert.deepEqual(_.words('enable 24H format'), ['enable', '24', 'H', 'format']);
+      assert.deepEqual(_.words('isISO8601'), ['is', 'ISO', '8601']);
       assert.deepEqual(_.words('tooLegit2Quit'), ['too', 'Legit', '2', 'Quit']);
       assert.deepEqual(_.words('walk500Miles'), ['walk', '500', 'Miles']);
       assert.deepEqual(_.words('xhr2Request'), ['xhr', '2', 'Request']);
@@ -22185,55 +22366,57 @@
 
   /*--------------------------------------------------------------------------*/
 
-  QUnit.module('lodash.zipObject');
+  QUnit.module('zipObject methods');
 
-  (function() {
-    var object = { 'barney': 36, 'fred': 40 },
-        array = [['barney', 36], ['fred', 40]];
+  lodashStable.each(['zipObject', 'zipObjectDeep'], function(methodName) {
+    var func = _[methodName],
+        array = [['barney', 36], ['fred', 40]],
+        object = { 'barney': 36, 'fred': 40 },
+        isDeep = methodName == 'zipObjectDeep';
 
-    QUnit.test('should zip together key/value arrays into an object', function(assert) {
+    QUnit.test('`_.' + methodName + '` should zip together key/value arrays into an object', function(assert) {
       assert.expect(1);
 
-      var actual = _.zipObject(['barney', 'fred'], [36, 40]);
+      var actual = func(['barney', 'fred'], [36, 40]);
       assert.deepEqual(actual, object);
     });
 
-    QUnit.test('should ignore extra `values`', function(assert) {
+    QUnit.test('`_.' + methodName + '` should ignore extra `values`', function(assert) {
       assert.expect(1);
 
-      assert.deepEqual(_.zipObject(['a'], [1, 2]), { 'a': 1 });
+      assert.deepEqual(func(['a'], [1, 2]), { 'a': 1 });
     });
 
-    QUnit.test('should assign `undefined` values for extra `keys`', function(assert) {
+    QUnit.test('`_.' + methodName + '` should assign `undefined` values for extra `keys`', function(assert) {
       assert.expect(1);
 
-      assert.deepEqual(_.zipObject(['a', 'b'], [1]), { 'a': 1, 'b': undefined });
+      assert.deepEqual(func(['a', 'b'], [1]), { 'a': 1, 'b': undefined });
     });
 
-    QUnit.test('should support deep paths', function(assert) {
+    QUnit.test('`_.' + methodName + '` should ' + (isDeep ? '' : 'not ') + 'support deep paths', function(assert) {
       assert.expect(2);
 
-      lodashStable.each(['a.b.c', ['a', 'b', 'c']], function(path) {
-        var actual = _.zipObject([path], [1]);
-        assert.deepEqual(actual, { 'a': { 'b': { 'c': 1 } } });
+      lodashStable.each(['a.b.c', ['a', 'b', 'c']], function(path, index) {
+        var expected = isDeep ? ({ 'a': { 'b': { 'c': 1 } } }) : (index ? { 'a,b,c': 1 } : { 'a.b.c': 1 });
+        assert.deepEqual(func([path], [1]), expected);
       });
     });
 
-    QUnit.test('should work in a lazy sequence', function(assert) {
+    QUnit.test('`_.' + methodName + '` should work in a lazy sequence', function(assert) {
       assert.expect(1);
 
       if (!isNpm) {
         var values = lodashStable.range(LARGE_ARRAY_SIZE),
             props = lodashStable.map(values, function(value) { return 'key' + value; }),
-            actual = _(props).zipObject(values).map(square).filter(isEven).take().value();
+            actual = _(props)[methodName](values).map(square).filter(isEven).take().value();
 
-        assert.deepEqual(actual, _.take(_.filter(_.map(_.zipObject(props, values), square), isEven)));
+        assert.deepEqual(actual, _.take(_.filter(_.map(func(props, values), square), isEven)));
       }
       else {
         skipTest(assert);
       }
     });
-  }());
+  });
 
   /*--------------------------------------------------------------------------*/
 
@@ -22244,10 +22427,20 @@
       assert.expect(2);
 
       var array1 = [1, 2, 3],
-          array2 = [4, 5, 6];
+          array2 = [4, 5, 6],
+          array3 = [7, 8, 9];
 
-      assert.deepEqual(_.zipWith(array1, array2, _.add), [5, 7, 9]);
-      assert.deepEqual(_.zipWith(array1, [], _.add), [1, 2, 3]);
+      var actual = _.zipWith(array1, array2, array3, function(a, b, c) {
+        return a + b + c;
+      });
+
+      assert.deepEqual(actual, [12, 15, 18]);
+
+      var actual = _.zipWith(array1, [], function(a, b) {
+        return a + (b || 0);
+      });
+
+      assert.deepEqual(actual, [1, 2, 3]);
     });
 
     QUnit.test('should provide the correct `iteratee` arguments', function(assert) {
@@ -22259,7 +22452,7 @@
         args || (args = slice.call(arguments));
       });
 
-      assert.deepEqual(args, [1, 3, 1, [1, 3, 5]]);
+      assert.deepEqual(args, [1, 3, 5]);
     });
 
     QUnit.test('should perform a basic zip when `iteratee` is nullish', function(assert) {
@@ -22744,16 +22937,15 @@
     });
 
     QUnit.test('should be aliased', function(assert) {
-      assert.expect(3);
+      assert.expect(2);
 
       if (!isNpm) {
         var expected = _.prototype.value;
-        assert.strictEqual(_.prototype.run, expected);
         assert.strictEqual(_.prototype.toJSON, expected);
         assert.strictEqual(_.prototype.valueOf, expected);
       }
       else {
-        skipTest(assert, 3);
+        skipTest(assert, 2);
       }
     });
   }());
@@ -23161,7 +23353,7 @@
     var acceptFalsey = lodashStable.difference(allMethods, rejectFalsey);
 
     QUnit.test('should accept falsey arguments', function(assert) {
-      assert.expect(287);
+      assert.expect(288);
 
       var emptyArrays = lodashStable.map(falsey, alwaysEmptyArray);
 
