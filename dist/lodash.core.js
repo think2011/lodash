@@ -1,6 +1,6 @@
 /**
  * @license
- * lodash 4.0.0 (Custom Build) <https://lodash.com/>
+ * lodash 4.1.0 (Custom Build) <https://lodash.com/>
  * Build: `lodash core -o ./dist/lodash.core.js`
  * Copyright 2012-2016 The Dojo Foundation <http://dojofoundation.org/>
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
@@ -13,7 +13,7 @@
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.0.0';
+  var VERSION = '4.1.0';
 
   /** Used to compose bitmasks for wrapper metadata. */
   var BIND_FLAG = 1,
@@ -159,7 +159,7 @@
   /**
    * The base implementation of methods like `_.find` and `_.findKey`, without
    * support for iteratee shorthands, which iterates over `collection` using
-   * the provided `eachFunc`.
+   * `eachFunc`.
    *
    * @private
    * @param {Array|Object} collection The collection to search.
@@ -181,21 +181,20 @@
 
   /**
    * The base implementation of `_.reduce` and `_.reduceRight`, without support
-   * for iteratee shorthands, which iterates over `collection` using the provided
-   * `eachFunc`.
+   * for iteratee shorthands, which iterates over `collection` using `eachFunc`.
    *
    * @private
    * @param {Array|Object} collection The collection to iterate over.
    * @param {Function} iteratee The function invoked per iteration.
    * @param {*} accumulator The initial value.
-   * @param {boolean} initFromCollection Specify using the first or last element of `collection` as the initial value.
+   * @param {boolean} initAccum Specify using the first or last element of `collection` as the initial value.
    * @param {Function} eachFunc The function to iterate over `collection`.
    * @returns {*} Returns the accumulated value.
    */
-  function baseReduce(collection, iteratee, accumulator, initFromCollection, eachFunc) {
+  function baseReduce(collection, iteratee, accumulator, initAccum, eachFunc) {
     eachFunc(collection, function(value, index, collection) {
-      accumulator = initFromCollection
-        ? (initFromCollection = false, value)
+      accumulator = initAccum
+        ? (initAccum = false, value)
         : iteratee(accumulator, value, index, collection);
     });
     return accumulator;
@@ -362,8 +361,8 @@
   var oldDash = root._;
 
   /** Built-in value references. */
-  var _Symbol = root.Symbol,
-      Reflect = root.Reflect,
+  var Reflect = root.Reflect,
+      Symbol = root.Symbol,
       Uint8Array = root.Uint8Array,
       enumerate = Reflect ? Reflect.enumerate : undefined,
       propertyIsEnumerable = objectProto.propertyIsEnumerable;
@@ -416,47 +415,48 @@
    * The chainable wrapper methods are:
    * `after`, `ary`, `assign`, `assignIn`, `assignInWith`, `assignWith`,
    * `at`, `before`, `bind`, `bindAll`, `bindKey`, `chain`, `chunk`, `commit`,
-   * `compact`, `concat`, `conforms`,  `constant`, `countBy`, `create`, `curry`,
+   * `compact`, `concat`, `conforms`, `constant`, `countBy`, `create`, `curry`,
    * `debounce`, `defaults`, `defaultsDeep`, `defer`, `delay`, `difference`,
-   * `differenceBy`, `differenceWith`,  `drop`, `dropRight`, `dropRightWhile`,
+   * `differenceBy`, `differenceWith`, `drop`, `dropRight`, `dropRightWhile`,
    * `dropWhile`, `fill`, `filter`, `flatten`, `flattenDeep`, `flip`, `flow`,
-   * `flowRight`, `forEach`, `forEachRight`, `forIn`, `forInRight`, `forOwn`,
-   * `forOwnRight`, `fromPairs`, `functions`, `functionsIn`, `groupBy`, `initial`,
-   * `intersection`, `intersectionBy`, `intersectionWith`, invert`, `invokeMap`,
-   * `iteratee`, `keyBy`, `keys`, `keysIn`, `map`, `mapKeys`, `mapValues`,
-   * `matches`, `matchesProperty`, `memoize`, `merge`, `mergeWith`, `method`,
-   * `methodOf`, `mixin`, `negate`, `nthArg`, `omit`, `omitBy`, `once`, `orderBy`,
-   * `over`, `overArgs`, `overEvery`, `overSome`, `partial`, `partialRight`,
-   * `partition`, `pick`, `pickBy`, `plant`, `property`, `propertyOf`, `pull`,
-   * `pullAll`, `pullAllBy`, `pullAt`, `push`, `range`, `rangeRight`, `rearg`,
-   * `reject`, `remove`, `rest`, `reverse`, `sampleSize`, `set`, `setWith`,
-   * `shuffle`, `slice`, `sort`, `sortBy`, `splice`, `spread`, `tail`, `take`,
-   * `takeRight`, `takeRightWhile`, `takeWhile`, `tap`, `throttle`, `thru`,
-   * `toArray`, `toPairs`, `toPairsIn`, `toPath`, `toPlainObject`, `transform`,
-   * `unary`, `union`, `unionBy`, `unionWith`, `uniq`, `uniqBy`, `uniqWith`,
-   * `unset`, `unshift`, `unzip`, `unzipWith`, `values`, `valuesIn`, `without`,
-   * `wrap`, `xor`, `xorBy`, `xorWith`, `zip`, `zipObject`, and `zipWith`
+   * `flowRight`, `fromPairs`, `functions`, `functionsIn`, `groupBy`, `initial`,
+   * `intersection`, `intersectionBy`, `intersectionWith`, `invert`, `invertBy`,
+   * `invokeMap`, `iteratee`, `keyBy`, `keys`, `keysIn`, `map`, `mapKeys`,
+   * `mapValues`, `matches`, `matchesProperty`, `memoize`, `merge`, `mergeWith`,
+   * `method`, `methodOf`, `mixin`, `negate`, `nthArg`, `omit`, `omitBy`, `once`,
+   * `orderBy`, `over`, `overArgs`, `overEvery`, `overSome`, `partial`,
+   * `partialRight`, `partition`, `pick`, `pickBy`, `plant`, `property`,
+   * `propertyOf`, `pull`, `pullAll`, `pullAllBy`, `pullAt`, `push`, `range`,
+   * `rangeRight`, `rearg`, `reject`, `remove`, `rest`, `reverse`, `sampleSize`,
+   * `set`, `setWith`, `shuffle`, `slice`, `sort`, `sortBy`, `splice`, `spread`,
+   * `tail`, `take`, `takeRight`, `takeRightWhile`, `takeWhile`, `tap`, `throttle`,
+   * `thru`, `toArray`, `toPairs`, `toPairsIn`, `toPath`, `toPlainObject`,
+   * `transform`, `unary`, `union`, `unionBy`, `unionWith`, `uniq`, `uniqBy`,
+   * `uniqWith`, `unset`, `unshift`, `unzip`, `unzipWith`, `values`, `valuesIn`,
+   * `without`, `wrap`, `xor`, `xorBy`, `xorWith`, `zip`, `zipObject`,
+   * `zipObjectDeep`, and `zipWith`
    *
    * The wrapper methods that are **not** chainable by default are:
    * `add`, `attempt`, `camelCase`, `capitalize`, `ceil`, `clamp`, `clone`,
    * `cloneDeep`, `cloneDeepWith`, `cloneWith`, `deburr`, `endsWith`, `eq`,
    * `escape`, `escapeRegExp`, `every`, `find`, `findIndex`, `findKey`,
-   * `findLast`, `findLastIndex`, `findLastKey`, `floor`, `get`, `gt`, `gte`,
-   * `has`, `hasIn`, `head`, `identity`, `includes`, `indexOf`, `inRange`,
-   * `invoke`, `isArguments`, `isArray`, `isArrayLike`, `isArrayLikeObject`,
-   * `isBoolean`, `isDate`, `isElement`, `isEmpty`, `isEqual`, `isEqualWith`,
-   * `isError`, `isFinite`, `isFunction`, `isInteger`, `isLength`, `isMatch`,
-   * `isMatchWith`, `isNaN`, `isNative`, `isNil`, `isNull`, `isNumber`,
-   * `isObject`, `isObjectLike`, `isPlainObject`, `isRegExp`, `isSafeInteger`,
-   * `isString`, `isUndefined`, `isTypedArray`, `join`, `kebabCase`, `last`,
-   * `lastIndexOf`, `lowerCase`, `lowerFirst`, `lt`, `lte`, `max`, `maxBy`,
-   * `mean`, `min`, `minBy`, `noConflict`, `noop`, `now`, `pad`, `padEnd`,
-   * `padStart`, `parseInt`, `pop`, `random`, `reduce`, `reduceRight`, `repeat`,
-   * `result`, `round`, `runInContext`, `sample`, `shift`, `size`, `snakeCase`,
-   * `some`, `sortedIndex`, `sortedIndexBy`, `sortedLastIndex`, `sortedLastIndexBy`,
-   * `startCase`, `startsWith`, `subtract`, `sum`, `sumBy`, `template`, `times`,
-   * `toLower`, `toInteger`, `toLength`, `toNumber`, `toSafeInteger`, `toString`,
-   * `toUpper`, `trim`, `trimEnd`, `trimStart`, `truncate`, `unescape`, `uniqueId`,
+   * `findLast`, `findLastIndex`, `findLastKey`, `floor`, `forEach`, `forEachRight`,
+   * `forIn`, `forInRight`, `forOwn`, `forOwnRight`, `get`, `gt`, `gte`, `has`,
+   * `hasIn`, `head`, `identity`, `includes`, `indexOf`, `inRange`, `invoke`,
+   * `isArguments`, `isArray`, `isArrayLike`, `isArrayLikeObject`, `isBoolean`,
+   * `isDate`, `isElement`, `isEmpty`, `isEqual`, `isEqualWith`, `isError`,
+   * `isFinite`, `isFunction`, `isInteger`, `isLength`, `isMatch`, `isMatchWith`,
+   * `isNaN`, `isNative`, `isNil`, `isNull`, `isNumber`, `isObject`, `isObjectLike`,
+   * `isPlainObject`, `isRegExp`, `isSafeInteger`, `isString`, `isUndefined`,
+   * `isTypedArray`, `join`, `kebabCase`, `last`, `lastIndexOf`, `lowerCase`,
+   * `lowerFirst`, `lt`, `lte`, `max`, `maxBy`, `mean`, `min`, `minBy`,
+   * `noConflict`, `noop`, `now`, `pad`, `padEnd`, `padStart`, `parseInt`,
+   * `pop`, `random`, `reduce`, `reduceRight`, `repeat`, `result`, `round`,
+   * `runInContext`, `sample`, `shift`, `size`, `snakeCase`, `some`, `sortedIndex`,
+   * `sortedIndexBy`, `sortedLastIndex`, `sortedLastIndexBy`, `startCase`,
+   * `startsWith`, `subtract`, `sum`, `sumBy`, `template`, `times`, `toLower`,
+   * `toInteger`, `toLength`, `toNumber`, `toSafeInteger`, `toString`, `toUpper`,
+   * `trim`, `trimEnd`, `trimStart`, `truncate`, `unescape`, `uniqueId`,
    * `upperCase`, `upperFirst`, `value`, and `words`
    *
    * @name _
@@ -1058,7 +1058,7 @@
       while (++index < length) {
         var source = sources[index];
         if (source) {
-          assigner(object, source, customizer);
+          assigner(object, source, index, customizer);
         }
       }
       return object;
@@ -1361,9 +1361,11 @@
    */
   function indexKeys(object) {
     var length = object ? object.length : undefined;
-    return (isLength(length) && (isArray(object) || isString(object) || isArguments(object)))
-      ? baseTimes(length, String)
-      : null;
+    if (isLength(length) &&
+        (isArray(object) || isString(object) || isArguments(object))) {
+      return baseTimes(length, String);
+    }
+    return null;
   }
 
   /**
@@ -1446,8 +1448,11 @@
    * // => [1]
    */
   var concat = rest(function(array, values) {
+    if (!isArray(array)) {
+      array = array == null ? [] : [Object(array)];
+    }
     values = baseFlatten(values);
-    return arrayConcat(isArray(array) ? array : [Object(array)], values);
+    return arrayConcat(array, values);
   });
 
   /**
@@ -1870,36 +1875,6 @@
   }
 
   /**
-   * Invokes the method at `path` of each element in `collection`, returning
-   * an array of the results of each invoked method. Any additional arguments
-   * are provided to each invoked method. If `methodName` is a function it's
-   * invoked for, and `this` bound to, each element in `collection`.
-   *
-   * @static
-   * @memberOf _
-   * @category Collection
-   * @param {Array|Object} collection The collection to iterate over.
-   * @param {Array|Function|string} path The path of the method to invoke or
-   *  the function invoked per iteration.
-   * @param {...*} [args] The arguments to invoke each method with.
-   * @returns {Array} Returns the array of results.
-   * @example
-   *
-   * _.invokeMap([[5, 1, 7], [3, 2, 1]], 'sort');
-   * // => [[1, 5, 7], [1, 2, 3]]
-   *
-   * _.invokeMap([123, 456], String.prototype.split, '');
-   * // => [['1', '2', '3'], ['4', '5', '6']]
-   */
-  var invokeMap = rest(function(collection, path, args) {
-    var isFunc = typeof path == 'function';
-    return baseMap(collection, function(value) {
-      var func = isFunc ? path : value[path];
-      return func == null ? func : func.apply(value, args);
-    });
-  });
-
-  /**
    * Creates an array of values by running each element in `collection` through
    * `iteratee`. The iteratee is invoked with three arguments:
    * (value, index|key, collection).
@@ -1925,11 +1900,11 @@
    *   return n * n;
    * }
    *
-   * _.map([1, 2], square);
-   * // => [3, 6]
+   * _.map([4, 8], square);
+   * // => [16, 64]
    *
-   * _.map({ 'a': 1, 'b': 2 }, square);
-   * // => [3, 6] (iteration order is not guaranteed)
+   * _.map({ 'a': 4, 'b': 8 }, square);
+   * // => [16, 64] (iteration order is not guaranteed)
    *
    * var users = [
    *   { 'user': 'barney' },
@@ -2093,26 +2068,6 @@
       return compareAscending(object.criteria, other.criteria) || (object.index - other.index);
     }), baseProperty('value'));
   }
-
-  /*------------------------------------------------------------------------*/
-
-  /**
-   * Gets the timestamp of the number of milliseconds that have elapsed since
-   * the Unix epoch (1 January 1970 00:00:00 UTC).
-   *
-   * @static
-   * @memberOf _
-   * @type Function
-   * @category Date
-   * @returns {number} Returns the timestamp.
-   * @example
-   *
-   * _.defer(function(stamp) {
-   *   console.log(_.now() - stamp);
-   * }, _.now());
-   * // => logs the number of milliseconds it took for the deferred function to be invoked
-   */
-  var now = Date.now;
 
   /*------------------------------------------------------------------------*/
 
@@ -2591,9 +2546,16 @@
    * // => false
    */
   function isEmpty(value) {
-    return (!isObjectLike(value) || isFunction(value.splice))
-      ? !size(value)
-      : !keys(value).length;
+    if (isArrayLike(value) &&
+        (isArray(value) || isString(value) || isFunction(value.splice) || isArguments(value))) {
+      return !value.length;
+    }
+    for (var key in value) {
+      if (hasOwnProperty.call(value, key)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -3132,7 +3094,7 @@
    * defaults({ 'a': 1 }, { 'b': 2 }, { 'a': 3 });
    * // => { 'a': 1, 'b': 2 }
    */
-  var assignInWith = createAssigner(function(object, source, customizer) {
+  var assignInWith = createAssigner(function(object, source, srcIndex, customizer) {
     copyObjectWith(source, keysIn(source), object, customizer);
   });
 
@@ -3606,7 +3568,9 @@
    * var lodash = _.noConflict();
    */
   function noConflict() {
-    root._ = oldDash;
+    if (root._ === this) {
+      root._ = oldDash;
+    }
     return this;
   }
 
@@ -3716,7 +3680,6 @@
   lodash.filter = filter;
   lodash.flatten = flatten;
   lodash.flattenDeep = flattenDeep;
-  lodash.invokeMap = invokeMap;
   lodash.iteratee = iteratee;
   lodash.keys = keys;
   lodash.map = map;
@@ -3770,7 +3733,6 @@
   lodash.min = min;
   lodash.noConflict = noConflict;
   lodash.noop = noop;
-  lodash.now = now;
   lodash.reduce = reduce;
   lodash.result = result;
   lodash.size = size;

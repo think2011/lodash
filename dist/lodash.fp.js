@@ -57,10 +57,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	var baseConvert = __webpack_require__(1);
 
 	/**
-	 * Converts `lodash` to an auto-curried iteratee-first data-last version.
+	 * Converts `lodash` to an immutable auto-curried iteratee-first data-last version.
 	 *
 	 * @param {Function} lodash The lodash function.
-	 * @returns {Function} Returns the converted lodash function.
+	 * @returns {Function} Returns the converted `lodash`.
 	 */
 	function browserConvert(lodash) {
 	  return baseConvert(lodash, lodash);
@@ -74,7 +74,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var mapping = __webpack_require__(2),
-	    mutateMap = mapping.mutateMap;
+	    mutateMap = mapping.mutate,
+	    placeholder = {};
 
 	/**
 	 * The base implementation of `convert` which accepts a `util` object of methods
@@ -114,21 +115,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      keys = _.keys,
 	      rearg = _.rearg;
 
-	  var baseAry = function(func, n) {
-	    return function() {
-	      var args = arguments,
-	          length = Math.min(args.length, n);
+	  var baseArity = function(func, n) {
+	    return n == 2
+	      ? function(a, b) { return func.apply(undefined, arguments); }
+	      : function(a) { return func.apply(undefined, arguments); };
+	  };
 
-	      switch (length) {
-	        case 1: return func(args[0]);
-	        case 2: return func(args[0], args[1]);
-	      }
-	      args = Array(length);
-	      while (length--) {
-	        args[length] = arguments[length];
-	      }
-	      return func.apply(undefined, args);
-	    };
+	  var baseAry = function(func, n) {
+	    return n == 2
+	      ? function(a, b) { return func(a, b); }
+	      : function(a) { return func(a); };
 	  };
 
 	  var cloneArray = function(array) {
@@ -157,6 +153,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	  };
 
+	  var iterateeRearg = function(func, indexes) {
+	    return overArg(func, function(func) {
+	      var n = indexes.length;
+	      return baseArity(rearg(baseAry(func, n), indexes), n);
+	    });
+	  };
+
 	  var overArg = function(func, iteratee, retArg) {
 	    return function() {
 	      var length = arguments.length,
@@ -173,7 +176,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  var wrappers = {
 	    'iteratee': function(iteratee) {
-	      return function(func, arity) {
+	      return function() {
+	        var func = arguments[0],
+	            arity = arguments[1];
+
 	        arity = arity > 2 ? (arity - 2) : 1;
 	        func = iteratee(func);
 	        var length = func.length;
@@ -218,6 +224,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 
 	  var wrap = function(name, func) {
+	    name = mapping.aliasToReal[name] || name;
 	    var wrapper = wrappers[name];
 	    if (wrapper) {
 	      return wrapper(func);
@@ -233,14 +240,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    var result;
 	    each(mapping.caps, function(cap) {
-	      each(mapping.aryMethodMap[cap], function(otherName) {
+	      each(mapping.aryMethod[cap], function(otherName) {
 	        if (name == otherName) {
+	          var indexes = mapping.iterateeRearg[name],
+	              n = !isLib && mapping.aryIteratee[name];
+
 	          result = ary(func, cap);
-	          if (cap > 1 && !mapping.skipReargMap[name]) {
-	            result = rearg(result, mapping.methodReargMap[name] || mapping.aryReargMap[cap]);
+	          if (cap > 1 && !mapping.skipRearg[name]) {
+	            result = rearg(result, mapping.methodRearg[name] || mapping.aryRearg[cap]);
 	          }
-	          var n = !isLib && mapping.aryIterateeMap[name];
-	          if (n) {
+	          if (indexes) {
+	            result = iterateeRearg(result, indexes);
+	          } else if (n) {
 	            result = iterateeAry(result, n);
 	          }
 	          if (cap > 1) {
@@ -251,7 +262,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 	      return !result;
 	    });
-	    return result || func;
+
+	    result || (result = func);
+	    if (mapping.placeholder[name]) {
+	      result.placeholder = placeholder;
+	    }
+	    return result;
 	  };
 
 	  if (!isLib) {
@@ -260,8 +276,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // Iterate over methods for the current ary cap.
 	  var pairs = [];
 	  each(mapping.caps, function(cap) {
-	    each(mapping.aryMethodMap[cap], function(key) {
-	      var func = _[mapping.keyMap[key] || key];
+	    each(mapping.aryMethod[cap], function(key) {
+	      var func = _[mapping.key[key] || key];
 	      if (func) {
 	        pairs.push([key, wrap(key, func)]);
 	      }
@@ -275,7 +291,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  // Wrap the lodash method and its aliases.
 	  each(keys(_), function(key) {
-	    each(mapping.aliasMap[key] || [], function(alias) {
+	    each(mapping.realToAlias[key] || [], function(alias) {
 	      _[alias] = _[key];
 	    });
 	  });
@@ -290,169 +306,225 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 2 */
 /***/ function(module, exports) {
 
-	module.exports = {
+	/** Used to map aliases to their real names. */
+	exports.aliasToReal = {
+	  'all': 'some',
+	  'allPass': 'overEvery',
+	  'apply': 'spread',
+	  'compose': 'flowRight',
+	  'contains': 'includes',
+	  'dissoc': 'omit',
+	  'each': 'forEach',
+	  'eachRight': 'forEachRight',
+	  'equals': 'isEqual',
+	  'extend': 'assignIn',
+	  'extendWith': 'assignInWith',
+	  'first': 'head',
+	  'init': 'initial',
+	  'mapObj': 'mapValues',
+	  'omitAll': 'omit',
+	  'nAry': 'ary',
+	  'path': 'get',
+	  'pathEq': 'matchesProperty',
+	  'pathOr': 'getOr',
+	  'pickAll': 'pick',
+	  'pipe': 'flow',
+	  'prop': 'get',
+	  'propOf': 'propertyOf',
+	  'propOr': 'getOr',
+	  'somePass': 'overSome',
+	  'unapply': 'rest',
+	  'unnest': 'flatten',
+	  'useWith': 'overArgs',
+	  'whereEq': 'filter',
+	  'zipObj': 'zipObject'
+	};
 
-	  /** Used to map method names to their aliases. */
-	  'aliasMap': {
-	    'ary': ['nAry'],
-	    'overEvery': ['allPass'],
-	    'overSome': ['somePass'],
-	    'filter': ['whereEq'],
-	    'flatten': ['unnest'],
-	    'flow': ['pipe'],
-	    'flowRight': ['compose'],
-	    'forEach': ['each'],
-	    'forEachRight': ['eachRight'],
-	    'get': ['path'],
-	    'getOr': ['pathOr'],
-	    'head': ['first'],
-	    'includes': ['contains'],
-	    'initial': ['init'],
-	    'isEqual': ['equals'],
-	    'mapValues': ['mapObj'],
-	    'matchesProperty': ['pathEq'],
-	    'overArgs': ['useWith'],
-	    'omit': ['dissoc', 'omitAll'],
-	    'pick': ['pickAll'],
-	    'property': ['prop'],
-	    'propertyOf': ['propOf'],
-	    'rest': ['unapply'],
-	    'some': ['all'],
-	    'spread': ['apply'],
-	    'zipObject': ['zipObj']
+	/** Used to map method names to their iteratee ary. */
+	exports.aryIteratee = {
+	  'assignWith': 2,
+	  'assignInWith': 2,
+	  'cloneDeepWith': 1,
+	  'cloneWith': 1,
+	  'dropRightWhile': 1,
+	  'dropWhile': 1,
+	  'every': 1,
+	  'filter': 1,
+	  'find': 1,
+	  'findIndex': 1,
+	  'findKey': 1,
+	  'findLast': 1,
+	  'findLastIndex': 1,
+	  'findLastKey': 1,
+	  'flatMap': 1,
+	  'forEach': 1,
+	  'forEachRight': 1,
+	  'forIn': 1,
+	  'forInRight': 1,
+	  'forOwn': 1,
+	  'forOwnRight': 1,
+	  'isEqualWith': 2,
+	  'isMatchWith': 2,
+	  'map': 1,
+	  'mapKeys': 1,
+	  'mapValues': 1,
+	  'partition': 1,
+	  'reduce': 2,
+	  'reduceRight': 2,
+	  'reject': 1,
+	  'remove': 1,
+	  'some': 1,
+	  'takeRightWhile': 1,
+	  'takeWhile': 1,
+	  'times': 1,
+	  'transform': 2
+	};
+
+	/** Used to map ary to method names. */
+	exports.aryMethod = {
+	  1: [
+	      'attempt', 'ceil', 'create', 'curry', 'curryRight', 'floor', 'fromPairs',
+	      'invert', 'iteratee', 'memoize', 'method', 'methodOf', 'mixin', 'over',
+	      'overEvery', 'overSome', 'rest', 'reverse', 'round', 'runInContext',
+	      'template', 'trim', 'trimEnd', 'trimStart', 'uniqueId', 'words'
+	    ],
+	  2: [
+	      'add', 'after', 'ary', 'assign', 'assignIn', 'at', 'before', 'bind', 'bindKey',
+	      'chunk', 'cloneDeepWith', 'cloneWith', 'concat', 'countBy', 'curryN',
+	      'curryRightN', 'debounce', 'defaults', 'defaultsDeep', 'delay', 'difference',
+	      'drop', 'dropRight', 'dropRightWhile', 'dropWhile', 'endsWith', 'eq', 'every',
+	      'filter', 'find', 'find', 'findIndex', 'findKey', 'findLast', 'findLastIndex',
+	      'findLastKey', 'flatMap', 'forEach', 'forEachRight', 'forIn', 'forInRight',
+	      'forOwn', 'forOwnRight', 'get', 'groupBy', 'gt', 'gte', 'has', 'hasIn',
+	      'includes', 'indexOf', 'intersection', 'invertBy', 'invoke', 'invokeMap',
+	      'isEqual', 'isMatch', 'join', 'keyBy', 'lastIndexOf', 'lt', 'lte', 'map',
+	      'mapKeys', 'mapValues', 'matchesProperty', 'maxBy', 'merge', 'minBy', 'omit',
+	      'omitBy', 'orderBy', 'overArgs', 'pad', 'padEnd', 'padStart', 'parseInt',
+	      'partition', 'pick', 'pickBy', 'pull', 'pullAll', 'pullAt', 'random', 'range',
+	      'rangeRight', 'rearg', 'reject', 'remove', 'repeat', 'result', 'sampleSize',
+	      'some', 'sortBy', 'sortedIndex', 'sortedIndexOf', 'sortedLastIndex',
+	      'sortedLastIndexOf', 'sortedUniqBy', 'split', 'startsWith', 'subtract',
+	      'sumBy', 'take', 'takeRight', 'takeRightWhile', 'takeWhile', 'tap', 'throttle',
+	      'thru', 'times', 'truncate', 'union', 'uniqBy', 'uniqWith', 'unset', 'unzipWith',
+	      'without', 'wrap', 'xor', 'zip', 'zipObject', 'zipObjectDeep'
+	    ],
+	  3: [
+	      'assignInWith', 'assignWith', 'clamp', 'differenceBy', 'differenceWith',
+	      'getOr', 'inRange', 'intersectionBy', 'intersectionWith', 'isEqualWith',
+	      'isMatchWith', 'mergeWith', 'pullAllBy', 'reduce', 'reduceRight', 'replace',
+	      'set', 'slice', 'sortedIndexBy', 'sortedLastIndexBy', 'transform', 'unionBy',
+	      'unionWith', 'xorBy', 'xorWith', 'zipWith'
+	    ],
+	  4: [
+	      'fill', 'setWith'
+	    ]
+	};
+
+	/** Used to map ary to rearg configs. */
+	exports.aryRearg = {
+	  2: [1, 0],
+	  3: [2, 1, 0],
+	  4: [3, 2, 0, 1]
+	};
+
+	/** Used to map method names to iteratee rearg configs. */
+	exports.iterateeRearg = {
+	  'findKey': [1],
+	  'findLastKey': [1],
+	  'mapKeys': [1]
+	};
+
+	/** Used to map method names to rearg configs. */
+	exports.methodRearg = {
+	  'assignInWith': [1, 2, 0],
+	  'assignWith': [1, 2, 0],
+	  'clamp': [2, 0, 1],
+	  'mergeWith': [1, 2, 0],
+	  'reduce': [2, 0, 1],
+	  'reduceRight': [2, 0, 1],
+	  'set': [2, 0, 1],
+	  'setWith': [3, 1, 2, 0],
+	  'slice': [2, 0, 1],
+	  'transform': [2, 0, 1]
+	};
+
+	/** Used to iterate `mapping.aryMethod` keys. */
+	exports.caps = [1, 2, 3, 4];
+
+	/** Used to map keys to other keys. */
+	exports.key = {
+	  'curryN': 'curry',
+	  'curryRightN': 'curryRight',
+	  'getOr': 'get'
+	};
+
+	/** Used to identify methods which mutate arrays or objects. */
+	exports.mutate = {
+	  'array': {
+	    'fill': true,
+	    'pull': true,
+	    'pullAll': true,
+	    'pullAllBy': true,
+	    'pullAt': true,
+	    'remove': true,
+	    'reverse': true
 	  },
-
-	  /** Used to map method names to their iteratee ary. */
-	  'aryIterateeMap': {
-	    'assignWith': 2,
-	    'cloneDeepWith': 1,
-	    'cloneWith': 1,
-	    'dropRightWhile': 1,
-	    'dropWhile': 1,
-	    'every': 1,
-	    'extendWith': 2,
-	    'filter': 1,
-	    'find': 1,
-	    'findIndex': 1,
-	    'findKey': 1,
-	    'findLast': 1,
-	    'findLastIndex': 1,
-	    'findLastKey': 1,
-	    'flatMap': 1,
-	    'forEach': 1,
-	    'forEachRight': 1,
-	    'forIn': 1,
-	    'forInRight': 1,
-	    'forOwn': 1,
-	    'forOwnRight': 1,
-	    'isEqualWith': 2,
-	    'isMatchWith': 2,
-	    'map': 1,
-	    'mapKeys': 1,
-	    'mapValues': 1,
-	    'partition': 1,
-	    'reduce': 2,
-	    'reduceRight': 2,
-	    'reject': 1,
-	    'remove': 1,
-	    'some': 1,
-	    'takeRightWhile': 1,
-	    'takeWhile': 1,
-	    'times': 1,
-	    'transform': 2
+	  'object': {
+	    'assign': true,
+	    'assignIn': true,
+	    'assignInWith': true,
+	    'assignWith': true,
+	    'defaults': true,
+	    'defaultsDeep': true,
+	    'merge': true,
+	    'mergeWith': true
 	  },
-
-	  /** Used to map ary to method names. */
-	  'aryMethodMap': {
-	    1: (
-	      'attempt,ceil,create,curry,curryRight,floor,fromPairs,iteratee,invert,over,' +
-	      'overEvery,overSome,memoize,method,methodOf,mixin,rest,reverse,round,' +
-	      'runInContext,template,trim,trimLeft,trimRight,uniqueId,words').split(','),
-	    2: (
-	      'add,ary,assign,at,bind,bindKey,cloneDeepWith,cloneWith,concat,countBy,curryN,' +
-	      'curryRightN,debounce,defaults,defaultsDeep,delay,difference,drop,dropRight,' +
-	      'dropRightWhile,dropWhile,endsWith,eq,every,extend,filter,find,find,findIndex,' +
-	      'findKey,findLast,findLastIndex,findLastKey,flatMap,forEach,forEachRight,' +
-	      'forIn,forInRight,forOwn,forOwnRight,get,groupBy,includes,indexBy,indexOf,' +
-	      'intersection,invoke,invokeMap,isMatch,lastIndexOf,map,mapKeys,mapValues,' +
-	      'matchesProperty,maxBy,mean,minBy,merge,omit,orderBy,overArgs,pad,padLeft,' +
-	      'padRight,parseInt,partition,pick,pull,pullAll,pullAt,random,range,rangeRight,' +
-	      'rearg,reject,remove,repeat,result,sampleSize,some,sortBy,sortedIndexBy,' +
-	      'sortedLastIndexBy,sortedUniqBy,startsWith,subtract,sumBy,take,takeRight,' +
-	      'takeRightWhile,takeWhile,throttle,times,truncate,union,uniqBy,without,wrap,' +
-	      'xor,zip,zipObject').split(','),
-	    3: (
-	      'assignWith,clamp,differenceBy,extendWith,getOr,inRange,intersectionBy,' +
-	      'isEqualWith,isMatchWith,mergeWith,omitBy,pickBy,pullAllBy,reduce,' +
-	      'reduceRight,set,slice,transform,unionBy,xorBy,zipWith').split(','),
-	    4:
-	      ['fill', 'setWith']
-	  },
-
-	  /** Used to map ary to rearg configs by method ary. */
-	  'aryReargMap': {
-	    2: [1, 0],
-	    3: [2, 1, 0],
-	    4: [3, 2, 0, 1]
-	  },
-
-	  /** Used to map ary to rearg configs by method names. */
-	  'methodReargMap': {
-	    'clamp': [2, 0, 1],
-	    'reduce': [2, 0, 1],
-	    'reduceRight': [2, 0, 1],
-	    'setWith': [3, 2, 1, 0],
-	    'slice': [2, 0, 1],
-	    'transform': [2, 0, 1]
-	  },
-
-	  /** Used to iterate `mapping.aryMethodMap` keys. */
-	  'caps': [1, 2, 3, 4],
-
-	  /** Used to map keys to other keys. */
-	  'keyMap': {
-	    'curryN': 'curry',
-	    'curryRightN': 'curryRight',
-	    'getOr': 'get'
-	  },
-
-	  /** Used to identify methods which mutate arrays or objects. */
-	  'mutateMap': {
-	    'array': {
-	      'fill': true,
-	      'pull': true,
-	      'pullAll': true,
-	      'pullAllBy': true,
-	      'pullAt': true,
-	      'remove': true,
-	      'reverse': true
-	    },
-	    'object': {
-	      'assign': true,
-	      'assignWith': true,
-	      'defaults': true,
-	      'defaultsDeep': true,
-	      'extend': true,
-	      'extendWith': true,
-	      'merge': true,
-	      'mergeWith': true
-	    },
-	    'set': {
-	      'set': true,
-	      'setWith': true
-	    }
-	  },
-
-	  /** Used to track methods that skip `_.rearg`. */
-	  'skipReargMap': {
-	    'difference': true,
-	    'matchesProperty': true,
-	    'random': true,
-	    'range': true,
-	    'rangeRight': true,
-	    'zip': true,
-	    'zipObject': true
+	  'set': {
+	    'set': true,
+	    'setWith': true
 	  }
+	};
+
+	/** Used to track methods with placeholder support */
+	exports.placeholder = {
+	  'bind': true,
+	  'bindKey': true,
+	  'curry': true,
+	  'curryRight': true,
+	  'partial': true,
+	  'partialRight': true
+	};
+
+	/** Used to map real names to their aliases. */
+	exports.realToAlias = (function() {
+	  var hasOwnProperty = Object.prototype.hasOwnProperty,
+	      object = exports.aliasToReal,
+	      result = {};
+
+	  for (var key in object) {
+	    var value = object[key];
+	    if (hasOwnProperty.call(result, value)) {
+	      result[value].push(key);
+	    } else {
+	      result[value] = [key];
+	    }
+	  }
+	  return result;
+	}());
+
+	/** Used to track methods that skip `_.rearg`. */
+	exports.skipRearg = {
+	  'assign': true,
+	  'assignIn': true,
+	  'concat': true,
+	  'difference': true,
+	  'matchesProperty': true,
+	  'merge': true,
+	  'random': true,
+	  'range': true,
+	  'rangeRight': true,
+	  'zip': true,
+	  'zipObject': true
 	};
 
 
