@@ -2731,6 +2731,7 @@
      * The base implementation of `_.invoke` without support for individual
      * method arguments.
      *
+     *
      * @private
      * @param {Object} object The object to query.
      * @param {Array|string} path The path of the method to invoke.
